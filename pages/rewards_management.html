@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المكافآت - مدير الموظفين</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        /* Custom RTL adjustments */
+        body {
+            font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Loading Screen Styles */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Form Section Styles */
+        .form-section {
+            transition: all 0.3s ease;
+        }
+        
+        /* Table Styles */
+        .rewards-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .rewards-table thead {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        }
+        
+        .rewards-table th {
+            padding: 1rem 1.5rem;
+            text-align: right;
+            font-weight: 600;
+            color: white;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .rewards-table td {
+            padding: 1rem 1.5rem;
+            text-align: right;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 0.875rem;
+        }
+        
+        .rewards-table tbody tr {
+            background-color: #D1FAE5;
+            transition: all 0.2s ease;
+        }
+        
+        .rewards-table tbody tr:hover {
+            background-color: #A7F3D0;
+            transform: scale(1.01);
+        }
+        
+        /* Action Button Styles */
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .edit-btn {
+            background: #2563EB;
+            color: white;
+        }
+        
+        .edit-btn:hover {
+            background: #1E40AF;
+        }
+        
+        .delete-btn {
+            background: #DC2626;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #B91C1C;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 300px;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .notification.success {
+            border-right: 4px solid #059669;
+        }
+        
+        .notification.error {
+            border-right: 4px solid #DC2626;
+        }
+        
+        .notification.info {
+            border-right: 4px solid #2563EB;
+        }
+        
+       /* Bottom Navigation Styles */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .bottom-nav-inner {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+}
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            padding: 0.90rem 0;
+            font-size: 0.90rem;
+            color: #6B7280;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-item:hover {
+            background-color: #F3F4F6;
+        }
+        
+        .nav-item.active {
+            color: #047857;
+            background: rgba(4,120,87,0.08);
+        }
+        
+        .nav-item.active .nav-icon {
+            color: #047857;
+        }
+        
+        .nav-item .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .nav-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Content padding for bottom nav */
+        .main-content {
+            padding-bottom: 80px;
+        }
+        
+        /* Filter Section Styles */
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6B7280;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Responsive Card View for Mobile */
+        @media (max-width: 768px) {
+            .rewards-table thead {
+                display: none;
+            }
+            
+            .rewards-table tbody tr {
+                display: block;
+                margin-bottom: 1rem;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            
+            .rewards-table td {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            }
+            
+            .rewards-table td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #047857;
+            }
+            
+            .rewards-table td:last-child {
+                border-bottom: none;
+            }
+        }
+        
+        /* Fade in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+  
+  <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Femployeem5022back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.12"></script>
+  <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2"></script>
+  </head>
+<body class="bg-background">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p class="text-white text-lg font-medium mt-6">جاري التحميل...</p>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header Section -->
+        <header class="bg-gradient-to-br from-primary to-secondary text-white py-8 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 class="text-3xl font-bold font-heading mb-2">إدارة المكافآت</h1>
+                        <p class="text-emerald-100 text-base">تسجيل وإدارة مكافآت الموظفين</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <svg class="w-16 h-16 text-emerald-200 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form Section -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="form-section bg-white rounded-lg shadow-md p-6 mb-8 fade-in">
+                <h2 class="text-xl font-bold text-text-primary mb-6 font-heading flex items-center gap-2">
+                    <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    إضافة مكافأة جديدة
+                </h2>
+                
+                <form id="rewardForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Employee Selection -->
+                    <div>
+                        <label class="label" for="employeeSelect">اسم الموظف *</label>
+                        <select id="employeeSelect" class="select" required>
+                            <option value="">اختر الموظف</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Picker -->
+                    <div>
+                        <label class="label" for="rewardDate">تاريخ المكافأة *</label>
+                        <input type="date" id="rewardDate" class="input" required>
+                    </div>
+
+                    <!-- Reason Input -->
+                    <div class="md:col-span-2">
+                        <label class="label" for="rewardReason">سبب المكافأة *</label>
+                        <textarea id="rewardReason" class="textarea" rows="4" placeholder="اكتب سبب المكافأة بالتفصيل..." required></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="md:col-span-2 flex gap-4">
+                        <button type="submit" class="btn btn-success flex-1 sm:flex-none">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            إضافة المكافأة
+                        </button>
+                        <button type="button" id="resetFormBtn" class="btn btn-outline">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            إعادة تعيين
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section fade-in" style="animation-delay: 0.1s">
+                <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <h3 class="text-lg font-semibold text-text-primary font-heading">تصفية المكافآت</h3>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <div class="flex gap-2">
+                            <input type="date" id="filterDate" class="input" placeholder="اختر التاريخ">
+                            <button id="filterBtn" class="btn btn-primary">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <button id="resetFilterBtn" class="btn btn-ghost">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            إعادة تعيين التصفية
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rewards Table Section -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden fade-in" style="animation-delay: 0.2s">
+                <div class="p-6 border-b border-border">
+                    <h2 class="text-xl font-bold text-text-primary font-heading flex items-center gap-2">
+                        <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        سجل المكافآت
+                    </h2>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="rewards-table" id="rewardsTable">
+                        <thead>
+                            <tr>
+                                <th>اسم الموظف</th>
+                                <th>التاريخ</th>
+                                <th>سبب المكافأة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rewardsTableBody">
+                            <!-- Table rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-state hidden">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold mb-2">لا توجد مكافآت مسجلة</h3>
+                        <p class="text-sm">ابدأ بإضافة مكافأة جديدة باستخدام النموذج أعلاه</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-text-primary font-heading">تعديل المكافأة</h3>
+                <button id="closeEditModal" class="text-text-secondary hover:text-text-primary transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="editRewardForm" class="space-y-6">
+                <input type="hidden" id="editRewardId">
+                
+                <div>
+                    <label class="label" for="editEmployeeSelect">اسم الموظف *</label>
+                    <select id="editEmployeeSelect" class="select" required>
+                        <option value="">اختر الموظف</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label" for="editRewardDate">تاريخ المكافأة *</label>
+                    <input type="date" id="editRewardDate" class="input" required>
+                </div>
+
+                <div>
+                    <label class="label" for="editRewardReason">سبب المكافأة *</label>
+                    <textarea id="editRewardReason" class="textarea" rows="4" required></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="btn btn-success flex-1">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        حفظ التعديلات
+                    </button>
+                    <button type="button" id="cancelEditBtn" class="btn btn-outline flex-1">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-error-light rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-text-primary mb-2 font-heading">تأكيد الحذف</h3>
+                <p class="text-text-secondary">هل أنت متأكد من حذف هذه المكافأة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            </div>
+            
+            <div class="flex gap-4">
+                <button id="confirmDeleteBtn" class="btn btn-error flex-1">
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    حذف
+                </button>
+                <button id="cancelDeleteBtn" class="btn btn-outline flex-1">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+   <!-- Bottom Navigation -->
+   <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+        <a href="dashboard.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+            </svg>
+            <span>الرئيسية</span>
+        </a>
+
+        <a href="leaves_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>الإجازات</span>
+        </a>
+
+        <a href="rewards_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+            <span>المكافآت</span>
+        </a>
+
+        <a href="violations_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M12 9v2m0 4h.01M3.34 16l6.928-12c.77-1.333 2.694-1.333 3.464 0l6.928 12c.77 1.333-.192 3-1.732 3H5.072c-1.54 0-2.502-1.667-1.732-3z"/>
+            </svg>
+            <span>المخالفات</span>
+        </a>
+
+        <a href="statistics_overview.html" class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M5 3v18m7-14v14m7-10v10"/>
+            </svg>
+            <span>الإحصائيات</span>
+        </a>
+
+        <a href="break_time_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>الزمنيات</span>
+        </a>
+
+        <a href="settings.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0"/>
+            </svg>
+            <span>الإعدادات</span>
+        </a>
+    </div>
+</nav>
+
+    <script type="module">
+        // Firebase configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, push, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+      const firebaseConfig = {
+  apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+  authDomain: "gg52-f1a35.firebaseapp.com",
+  projectId: "gg52-f1a35",
+  storageBucket: "gg52-f1a35.firebasestorage.app",
+  messagingSenderId: "586005981678",
+  appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Global variables
+        let employees = [];
+        let rewards = [];
+        let currentEditId = null;
+        let currentDeleteId = null;
+        let filteredDate = null;
+
+        // Notification System
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icon = type === 'success' 
+                ? '<svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+                : type === 'error'
+                ? '<svg class="w-6 h-6 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+                : '<svg class="w-6 h-6 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            
+            notification.innerHTML = `
+                ${icon}
+                <span class="font-medium">${message}</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        }
+
+        // Format date to DD-MM-YYYY
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
+        // Load employees from Firebase
+        function loadEmployees() {
+            const employeesRef = ref(database, 'employees');
+            onValue(employeesRef, (snapshot) => {
+                employees = [];
+                const employeeSelect = document.getElementById('employeeSelect');
+                const editEmployeeSelect = document.getElementById('editEmployeeSelect');
+                
+                employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+                editEmployeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const employee = {
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    };
+                    employees.push(employee);
+                    
+                    const option = `<option value="${employee.id}">${employee.name}</option>`;
+                    employeeSelect.innerHTML += option;
+                    editEmployeeSelect.innerHTML += option;
+                });
+            });
+        }
+
+        // Load rewards from Firebase
+        function loadRewards() {
+            const rewardsRef = ref(database, 'rewards');
+            onValue(rewardsRef, (snapshot) => {
+                rewards = [];
+                snapshot.forEach((childSnapshot) => {
+                    rewards.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                displayRewards();
+            });
+        }
+
+        // Display rewards in table
+        function displayRewards() {
+            const tbody = document.getElementById('rewardsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            let displayData = rewards;
+            
+            // Apply date filter if set
+            if (filteredDate) {
+                displayData = rewards.filter(reward => reward.date === filteredDate);
+            }
+            
+            if (displayData.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            // Sort by date (newest first)
+            displayData.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            tbody.innerHTML = displayData.map(reward => {
+                const employee = employees.find(e => e.id === reward.employeeId);
+                const employeeName = employee ? employee.name : 'غير معروف';
+                
+                return `
+                    <tr>
+                        <td data-label="اسم الموظف">${employeeName}</td>
+                        <td data-label="التاريخ">${formatDate(reward.date)}</td>
+                        <td data-label="سبب المكافأة">${reward.reason}</td>
+                        <td data-label="الإجراءات">
+                            <div class="flex gap-2">
+                                <button class="action-btn edit-btn" onclick="window.editReward('${reward.id}')">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    تعديل
+                                </button>
+                                <button class="action-btn delete-btn" onclick="window.deleteReward('${reward.id}')">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    حذف
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Add reward
+        document.getElementById('rewardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const employeeId = document.getElementById('employeeSelect').value;
+            const date = document.getElementById('rewardDate').value;
+            const reason = document.getElementById('rewardReason').value;
+            
+            if (!employeeId || !date || !reason) {
+                showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                return;
+            }
+            
+            try {
+                const rewardsRef = ref(database, 'rewards');
+                await push(rewardsRef, {
+                    employeeId,
+                    date,
+                    reason,
+                    createdAt: new Date().toISOString()
+                });
+                
+                showNotification('تم إضافة المكافأة بنجاح', 'success');
+                document.getElementById('rewardForm').reset();
+            } catch (error) {
+                showNotification('حدث خطأ أثناء إضافة المكافأة', 'error');
+                console.error(error);
+            }
+        });
+
+        // Reset form
+        document.getElementById('resetFormBtn').addEventListener('click', () => {
+            document.getElementById('rewardForm').reset();
+            showNotification('تم إعادة تعيين النموذج', 'info');
+        });
+
+        // Filter by date
+        document.getElementById('filterBtn').addEventListener('click', () => {
+            const filterDate = document.getElementById('filterDate').value;
+            if (filterDate) {
+                filteredDate = filterDate;
+                displayRewards();
+                showNotification('تم تطبيق التصفية', 'info');
+            } else {
+                showNotification('يرجى اختيار تاريخ للتصفية', 'error');
+            }
+        });
+
+        // Reset filter
+        document.getElementById('resetFilterBtn').addEventListener('click', () => {
+            filteredDate = null;
+            document.getElementById('filterDate').value = '';
+            displayRewards();
+            showNotification('تم إعادة تعيين التصفية', 'info');
+        });
+
+        // Edit reward
+        window.editReward = (id) => {
+            const reward = rewards.find(r => r.id === id);
+            if (!reward) return;
+            
+            currentEditId = id;
+            document.getElementById('editRewardId').value = id;
+            document.getElementById('editEmployeeSelect').value = reward.employeeId;
+            document.getElementById('editRewardDate').value = reward.date;
+            document.getElementById('editRewardReason').value = reward.reason;
+            
+            document.getElementById('editModal').classList.add('active');
+        };
+
+        // Close edit modal
+        document.getElementById('closeEditModal').addEventListener('click', () => {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditId = null;
+        });
+
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditId = null;
+        });
+
+        // Submit edit form
+        document.getElementById('editRewardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentEditId) return;
+            
+            const employeeId = document.getElementById('editEmployeeSelect').value;
+            const date = document.getElementById('editRewardDate').value;
+            const reason = document.getElementById('editRewardReason').value;
+            
+            try {
+                const rewardRef = ref(database, `rewards/${currentEditId}`);
+                await update(rewardRef, {
+                    employeeId,
+                    date,
+                    reason,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                showNotification('تم تحديث المكافأة بنجاح', 'success');
+                document.getElementById('editModal').classList.remove('active');
+                currentEditId = null;
+            } catch (error) {
+                showNotification('حدث خطأ أثناء تحديث المكافأة', 'error');
+                console.error(error);
+            }
+        });
+
+        // Delete reward
+        window.deleteReward = (id) => {
+            currentDeleteId = id;
+            document.getElementById('deleteModal').classList.add('active');
+        };
+
+        // Cancel delete
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            document.getElementById('deleteModal').classList.remove('active');
+            currentDeleteId = null;
+        });
+
+        // Confirm delete
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (!currentDeleteId) return;
+            
+            try {
+                const rewardRef = ref(database, `rewards/${currentDeleteId}`);
+                await remove(rewardRef);
+                
+                showNotification('تم حذف المكافأة بنجاح', 'success');
+                document.getElementById('deleteModal').classList.remove('active');
+                currentDeleteId = null;
+            } catch (error) {
+                showNotification('حدث خطأ أثناء حذف المكافأة', 'error');
+                console.error(error);
+            }
+        });
+
+        // Hide loading screen after 1 second
+        window.addEventListener('load', () => {
+            loadEmployees();
+            loadRewards();
+            
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                loadingScreen.classList.add('hidden');
+            }, 1000);
+        });
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                    currentEditId = null;
+                    currentDeleteId = null;
+                }
+            });
+        });
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+</body>
+</html>

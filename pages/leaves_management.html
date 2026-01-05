@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الإجازات - مدير الموظفين</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        /* Custom RTL adjustments */
+        body {
+            font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Loading Screen Styles */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Form Section Styles */
+        .form-section {
+            transition: all 0.3s ease;
+        }
+        
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .data-table thead {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        }
+        
+        .data-table th {
+            padding: 1rem 1.5rem;
+            text-align: right;
+            font-weight: 600;
+            color: white;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        
+        .data-table td {
+            padding: 1rem 1.5rem;
+            text-align: right;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 0.875rem;
+        }
+        
+        .data-table tbody tr {
+            background: white;
+            transition: all 0.2s ease;
+        }
+        
+        .data-table tbody tr:nth-child(even) {
+            background: #F9FAFB;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #ECFDF5;
+            transform: scale(1.01);
+        }
+        
+        /* Action Button Styles */
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .edit-btn {
+            background: #2563EB;
+            color: white;
+            margin-left: 0.5rem;
+        }
+        
+        .edit-btn:hover {
+            background: #1E40AF;
+        }
+        
+        .delete-btn {
+            background: #DC2626;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #B91C1C;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 1rem;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-overlay.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Bottom Navigation Styles */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .bottom-nav-inner {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+}
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            padding: 0.90rem 0;
+            font-size: 0.90rem;
+            color: #6B7280;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-item:hover {
+            background-color: #F3F4F6;
+        }
+        
+        .nav-item.active {
+            color: #047857;
+            background: rgba(4,120,87,0.08);
+        }
+        
+        .nav-item.active .nav-icon {
+            color: #047857;
+        }
+        
+        .nav-item .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .nav-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Content padding for bottom nav */
+        .main-content {
+            padding-bottom: 80px;
+        }
+        
+        /* Badge Styles */
+        .leave-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-daily {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .badge-sick {
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+        
+        .badge-open {
+            background: #D1FAE5;
+            color: #047857;
+        }
+        
+        .badge-unpaid {
+            background: #FEF3C7;
+            color: #B45309;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            color: #D1D5DB;
+        }
+        
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .notification.hidden {
+            display: none;
+        }
+        
+        .notification-success {
+            border-right: 4px solid #059669;
+        }
+        
+        .notification-error {
+            border-right: 4px solid #DC2626;
+        }
+        
+        /* Responsive Mobile Cards */
+        @media (max-width: 768px) {
+            .table-container {
+                display: none;
+            }
+            
+            .mobile-cards {
+                display: block;
+            }
+            
+            .leave-card {
+                background: white;
+                border-radius: 12px;
+                padding: 1.25rem;
+                margin-bottom: 1rem;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                border-right: 4px solid #047857;
+            }
+            
+            .leave-card:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-cards {
+                display: none;
+            }
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid #D1D5DB;
+            background: white;
+        }
+        
+        .filter-btn:hover {
+            background: #F3F4F6;
+        }
+        
+        .reset-btn {
+            background: #047857;
+            color: white;
+            border: none;
+        }
+        
+        .reset-btn:hover {
+            background: #065F46;
+        }
+    </style>
+  
+  <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Femployeem5022back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.12"></script>
+  <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2"></script>
+  </head>
+<body class="bg-background">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p class="text-white text-lg font-medium mt-6">جاري التحميل...</p>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span id="notificationText"></span>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header Section -->
+        <header class="bg-gradient-to-br from-primary to-secondary text-white py-6 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold font-heading mb-1">إدارة الإجازات</h1>
+                        <p class="text-emerald-100 text-sm">تسجيل وإدارة إجازات الموظفين</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <svg class="w-14 h-14 text-emerald-200 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form Section -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8 form-section">
+                <h2 class="text-xl font-bold text-text-primary mb-6 font-heading flex items-center">
+                    <svg class="w-6 h-6 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    إضافة إجازة جديدة
+                </h2>
+                
+                <form id="leaveForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Employee Selection -->
+                    <div>
+                        <label for="employeeSelect" class="label">اسم الموظف <span class="text-error">*</span></label>
+                        <select id="employeeSelect" class="select" required>
+                            <option value="">اختر الموظف</option>
+                        </select>
+                    </div>
+
+                    <!-- Leave Type -->
+                    <div>
+                        <label for="leaveType" class="label">نوع الإجازة <span class="text-error">*</span></label>
+                        <select id="leaveType" class="select" required>
+                            <option value="">اختر نوع الإجازة</option>
+                            <option value="daily">يومية</option>
+                            <option value="sick">مرضية</option>
+                            <option value="open">مفتوحة</option>
+                            <option value="unpaid">بدون راتب</option>
+                        </select>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div>
+                        <label for="startDate" class="label">تاريخ البداية <span class="text-error">*</span></label>
+                        <input type="date" id="startDate" class="input" required>
+                    </div>
+
+                    <!-- End Date -->
+                    <div>
+                        <label for="endDate" class="label">تاريخ النهاية <span class="text-error">*</span></label>
+                        <input type="date" id="endDate" class="input" required>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="md:col-span-2 flex justify-end gap-3">
+                        <button type="button" id="resetFormBtn" class="btn btn-outline">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            إعادة تعيين
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            حفظ الإجازة
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="filter-section">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                        <label for="filterDate" class="label mb-0">تصفية حسب التاريخ:</label>
+                    </div>
+                    <input type="date" id="filterDate" class="input" style="max-width: 200px;">
+                    <button id="resetFilterBtn" class="filter-btn reset-btn">
+                        <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        إعادة تعيين التصفية
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-text-primary mb-6 font-heading flex items-center justify-between">
+                    <span class="flex items-center">
+                        <svg class="w-6 h-6 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        سجل الإجازات
+                    </span>
+                    <span id="recordCount" class="text-sm font-normal text-text-secondary">0 سجل</span>
+                </h2>
+
+                <!-- Desktop Table View -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>اسم الموظف</th>
+                                <th>نوع الوظيفة</th>
+                                <th>نوع الإجازة</th>
+                                <th>تاريخ البداية</th>
+                                <th>تاريخ النهاية</th>
+                                <th>المدة (أيام)</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leavesTableBody">
+                            <!-- Table rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Cards View -->
+                <div class="mobile-cards" id="mobileCardsContainer">
+                    <!-- Mobile cards will be inserted here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state hidden">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-text-primary mb-2">لا توجد سجلات</h3>
+                    <p class="text-text-secondary">لم يتم تسجيل أي إجازات بعد</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold text-text-primary mb-6 font-heading">تعديل الإجازة</h3>
+            <form id="editForm">
+                <input type="hidden" id="editLeaveId">
+                
+                <div class="mb-4">
+                    <label for="editEmployeeSelect" class="label">اسم الموظف</label>
+                    <select id="editEmployeeSelect" class="select" required>
+                        <option value="">اختر الموظف</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="editLeaveType" class="label">نوع الإجازة</label>
+                    <select id="editLeaveType" class="select" required>
+                        <option value="">اختر نوع الإجازة</option>
+                        <option value="daily">يومية</option>
+                        <option value="sick">مرضية</option>
+                        <option value="open">مفتوحة</option>
+                        <option value="unpaid">بدون راتب</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="editStartDate" class="label">تاريخ البداية</label>
+                    <input type="date" id="editStartDate" class="input" required>
+                </div>
+
+                <div class="mb-6">
+                    <label for="editEndDate" class="label">تاريخ النهاية</label>
+                    <input type="date" id="editEndDate" class="input" required>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="cancelEditBtn" class="btn btn-outline">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="text-center mb-6">
+                <svg class="w-16 h-16 text-error mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <h3 class="text-xl font-bold text-text-primary mb-2">تأكيد الحذف</h3>
+                <p class="text-text-secondary">هل أنت متأكد من حذف هذه الإجازة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            </div>
+            <div class="flex justify-center gap-3">
+                <button id="cancelDeleteBtn" class="btn btn-outline">إلغاء</button>
+                <button id="confirmDeleteBtn" class="btn btn-error">حذف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+   <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+        <a href="dashboard.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+            </svg>
+            <span>الرئيسية</span>
+        </a>
+
+        <a href="leaves_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>الإجازات</span>
+        </a>
+
+        <a href="rewards_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+            <span>المكافآت</span>
+        </a>
+
+        <a href="violations_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M12 9v2m0 4h.01M3.34 16l6.928-12c.77-1.333 2.694-1.333 3.464 0l6.928 12c.77 1.333-.192 3-1.732 3H5.072c-1.54 0-2.502-1.667-1.732-3z"/>
+            </svg>
+            <span>المخالفات</span>
+        </a>
+
+        <a href="statistics_overview.html" class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M5 3v18m7-14v14m7-10v10"/>
+            </svg>
+            <span>الإحصائيات</span>
+        </a>
+
+        <a href="break_time_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>الزمنيات</span>
+        </a>
+
+        <a href="settings.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0"/>
+            </svg>
+            <span>الإعدادات</span>
+        </a>
+    </div>
+</nav>
+
+    <script type="module">
+        // Firebase configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, push, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+       const firebaseConfig = {
+  apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+  authDomain: "gg52-f1a35.firebaseapp.com",
+  projectId: "gg52-f1a35",
+  storageBucket: "gg52-f1a35.firebasestorage.app",
+  messagingSenderId: "586005981678",
+  appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Global variables
+        let employees = [];
+        let leaves = [];
+        let currentDeleteId = null;
+        let filteredLeaves = [];
+
+        // Date formatting function
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
+        // Calculate duration in days
+        function calculateDuration(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return diffDays;
+        }
+
+        // Get leave type in Arabic
+        function getLeaveTypeArabic(type) {
+            const types = {
+                'daily': 'يومية',
+                'sick': 'مرضية',
+                'open': 'مفتوحة',
+                'unpaid': 'بدون راتب'
+            };
+            return types[type] || type;
+        }
+
+        // Get leave badge class
+        function getLeaveBadgeClass(type) {
+            const classes = {
+                'daily': 'badge-daily',
+                'sick': 'badge-sick',
+                'open': 'badge-open',
+                'unpaid': 'badge-unpaid'
+            };
+            return classes[type] || 'badge-daily';
+        }
+
+        // Get job type in Arabic
+        function getJobTypeArabic(type) {
+            const types = {
+                'technician': 'فني',
+                'joker': 'جوكر',
+                'supervisor': 'مشرف'
+            };
+            return types[type] || type;
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notification.className = `notification notification-${type}`;
+            notificationText.textContent = message;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Load employees
+        function loadEmployees() {
+            const employeesRef = ref(database, 'employees');
+            onValue(employeesRef, (snapshot) => {
+                employees = [];
+                const employeeSelect = document.getElementById('employeeSelect');
+                const editEmployeeSelect = document.getElementById('editEmployeeSelect');
+                
+                employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+                editEmployeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const employee = {
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    };
+                    employees.push(employee);
+                    
+                    const option = `<option value="${employee.id}">${employee.name} - ${getJobTypeArabic(employee.jobType)}</option>`;
+                    employeeSelect.innerHTML += option;
+                    editEmployeeSelect.innerHTML += option;
+                });
+            });
+        }
+
+        // Load leaves
+        function loadLeaves() {
+            const leavesRef = ref(database, 'leaves');
+            onValue(leavesRef, (snapshot) => {
+                leaves = [];
+                snapshot.forEach((childSnapshot) => {
+                    leaves.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                
+                // Sort by start date (newest first)
+                leaves.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+                
+                filteredLeaves = [...leaves];
+                renderLeaves();
+            });
+        }
+
+        // Render leaves table
+        function renderLeaves() {
+            const tableBody = document.getElementById('leavesTableBody');
+            const mobileContainer = document.getElementById('mobileCardsContainer');
+            const emptyState = document.getElementById('emptyState');
+            const recordCount = document.getElementById('recordCount');
+            
+            tableBody.innerHTML = '';
+            mobileContainer.innerHTML = '';
+            
+            if (filteredLeaves.length === 0) {
+                emptyState.classList.remove('hidden');
+                recordCount.textContent = '0 سجل';
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            recordCount.textContent = `${filteredLeaves.length} سجل`;
+            
+            filteredLeaves.forEach(leave => {
+                const employee = employees.find(e => e.id === leave.employeeId);
+                if (!employee) return;
+                
+                const duration = calculateDuration(leave.startDate, leave.endDate);
+                
+                // Desktop table row
+                const row = `
+                    <tr>
+                        <td class="font-medium">${employee.name}</td>
+                        <td>${getJobTypeArabic(employee.jobType)}</td>
+                        <td>
+                            <span class="leave-badge ${getLeaveBadgeClass(leave.leaveType)}">
+                                ${getLeaveTypeArabic(leave.leaveType)}
+                            </span>
+                        </td>
+                        <td>${formatDate(leave.startDate)}</td>
+                        <td>${formatDate(leave.endDate)}</td>
+                        <td>${duration} يوم</td>
+                        <td>
+                            <button onclick="editLeave('${leave.id}')" class="action-btn edit-btn">
+                                <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                تعديل
+                            </button>
+                            <button onclick="deleteLeave('${leave.id}')" class="action-btn delete-btn">
+                                <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                حذف
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+                
+                // Mobile card
+                const card = `
+                    <div class="leave-card">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-text-primary mb-1">${employee.name}</h3>
+                                <p class="text-sm text-text-secondary">${getJobTypeArabic(employee.jobType)}</p>
+                            </div>
+                            <span class="leave-badge ${getLeaveBadgeClass(leave.leaveType)}">
+                                ${getLeaveTypeArabic(leave.leaveType)}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+                            <div>
+                                <p class="text-text-secondary mb-1">تاريخ البداية</p>
+                                <p class="font-medium">${formatDate(leave.startDate)}</p>
+                            </div>
+                            <div>
+                                <p class="text-text-secondary mb-1">تاريخ النهاية</p>
+                                <p class="font-medium">${formatDate(leave.endDate)}</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-text-secondary mb-1">المدة</p>
+                                <p class="font-medium">${duration} يوم</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editLeave('${leave.id}')" class="action-btn edit-btn flex-1">
+                                <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                تعديل
+                            </button>
+                            <button onclick="deleteLeave('${leave.id}')" class="action-btn delete-btn flex-1">
+                                <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                حذف
+                            </button>
+                        </div>
+                    </div>
+                `;
+                mobileContainer.innerHTML += card;
+            });
+        }
+
+        // Add leave
+        document.getElementById('leaveForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const employeeId = document.getElementById('employeeSelect').value;
+            const leaveType = document.getElementById('leaveType').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // Validate dates
+            if (new Date(endDate) < new Date(startDate)) {
+                showNotification('تاريخ النهاية يجب أن يكون بعد تاريخ البداية', 'error');
+                return;
+            }
+            
+            const leaveData = {
+                employeeId,
+                leaveType,
+                startDate,
+                endDate,
+                createdAt: new Date().toISOString()
+            };
+            
+            try {
+                await push(ref(database, 'leaves'), leaveData);
+                showNotification('تم إضافة الإجازة بنجاح');
+                document.getElementById('leaveForm').reset();
+            } catch (error) {
+                showNotification('حدث خطأ أثناء إضافة الإجازة', 'error');
+                console.error(error);
+            }
+        });
+
+        // Reset form
+        document.getElementById('resetFormBtn').addEventListener('click', () => {
+            document.getElementById('leaveForm').reset();
+        });
+
+        // Edit leave
+        window.editLeave = function(leaveId) {
+            const leave = leaves.find(l => l.id === leaveId);
+            if (!leave) return;
+            
+            document.getElementById('editLeaveId').value = leaveId;
+            document.getElementById('editEmployeeSelect').value = leave.employeeId;
+            document.getElementById('editLeaveType').value = leave.leaveType;
+            document.getElementById('editStartDate').value = leave.startDate;
+            document.getElementById('editEndDate').value = leave.endDate;
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        };
+
+        // Save edit
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const leaveId = document.getElementById('editLeaveId').value;
+            const employeeId = document.getElementById('editEmployeeSelect').value;
+            const leaveType = document.getElementById('editLeaveType').value;
+            const startDate = document.getElementById('editStartDate').value;
+            const endDate = document.getElementById('editEndDate').value;
+            
+            // Validate dates
+            if (new Date(endDate) < new Date(startDate)) {
+                showNotification('تاريخ النهاية يجب أن يكون بعد تاريخ البداية', 'error');
+                return;
+            }
+            
+            const leaveData = {
+                employeeId,
+                leaveType,
+                startDate,
+                endDate
+            };
+            
+            try {
+                await update(ref(database, `leaves/${leaveId}`), leaveData);
+                showNotification('تم تحديث الإجازة بنجاح');
+                document.getElementById('editModal').classList.add('hidden');
+            } catch (error) {
+                showNotification('حدث خطأ أثناء تحديث الإجازة', 'error');
+                console.error(error);
+            }
+        });
+
+        // Cancel edit
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            document.getElementById('editModal').classList.add('hidden');
+        });
+
+        // Delete leave
+        window.deleteLeave = function(leaveId) {
+            currentDeleteId = leaveId;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        };
+
+        // Confirm delete
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (!currentDeleteId) return;
+            
+            try {
+                await remove(ref(database, `leaves/${currentDeleteId}`));
+                showNotification('تم حذف الإجازة بنجاح');
+                document.getElementById('deleteModal').classList.add('hidden');
+                currentDeleteId = null;
+            } catch (error) {
+                showNotification('حدث خطأ أثناء حذف الإجازة', 'error');
+                console.error(error);
+            }
+        });
+
+        // Cancel delete
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            document.getElementById('deleteModal').classList.add('hidden');
+            currentDeleteId = null;
+        });
+
+        // Filter by date
+        document.getElementById('filterDate').addEventListener('change', (e) => {
+            const filterDate = e.target.value;
+            
+            if (!filterDate) {
+                filteredLeaves = [...leaves];
+            } else {
+                filteredLeaves = leaves.filter(leave => {
+                    const startDate = new Date(leave.startDate);
+                    const endDate = new Date(leave.endDate);
+                    const filter = new Date(filterDate);
+                    
+                    return filter >= startDate && filter <= endDate;
+                });
+            }
+            
+            renderLeaves();
+        });
+
+        // Reset filter
+        document.getElementById('resetFilterBtn').addEventListener('click', () => {
+            document.getElementById('filterDate').value = '';
+            filteredLeaves = [...leaves];
+            renderLeaves();
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadEmployees();
+            loadLeaves();
+            
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }, 1000);
+        });
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+</body>
+</html>

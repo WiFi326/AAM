@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المخالفات - مدير الموظفين</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        /* Custom RTL adjustments */
+        body {
+            font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Loading Screen Styles */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        /* Table Styles */
+        .violations-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .violations-table thead {
+            background: #047857;
+            color: white;
+        }
+        
+        .violations-table th {
+            padding: 1rem;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .violations-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 0.875rem;
+        }
+        
+        .violations-table tbody tr {
+            background-color: #FEE2E2;
+            transition: background-color 0.2s ease;
+        }
+        
+        .violations-table tbody tr:hover {
+            background-color: #FECACA;
+        }
+        
+        /* Severity Badge Styles */
+        .severity-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .severity-severe {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        .severity-medium {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .severity-light {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        /* Action Button Styles */
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+        
+        .action-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+         /* Bottom Navigation Styles */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .bottom-nav-inner {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+}
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            padding: 0.90rem 0;
+            font-size: 0.90rem;
+            color: #6B7280;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-item:hover {
+            background-color: #F3F4F6;
+        }
+        
+        .nav-item.active {
+            color: #047857;
+            background: rgba(4,120,87,0.08);
+        }
+        
+        .nav-item.active .nav-icon {
+            color: #047857;
+        }
+        
+        .nav-item .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .nav-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Content padding for bottom nav */
+        .main-content {
+            padding-bottom: 80px;
+        }
+        
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-right: 4px solid #059669;
+        }
+        
+        .notification.error {
+            border-right: 4px solid #DC2626;
+        }
+        
+        /* Fade in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6B7280;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            color: #D1D5DB;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .violations-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .violations-table thead {
+                display: none;
+            }
+            
+            .violations-table tbody {
+                display: block;
+            }
+            
+            .violations-table tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid #E5E7EB;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .violations-table td {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid #F3F4F6;
+            }
+            
+            .violations-table td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #047857;
+            }
+            
+            .violations-table td:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+  
+  <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Femployeem5022back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.12"></script>
+  <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2"></script>
+  </head>
+<body class="bg-background">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p class="text-white text-lg font-medium mt-6">جاري التحميل...</p>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span id="notificationText"></span>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header Section -->
+        <header class="bg-gradient-to-br from-primary to-secondary text-white py-8 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold font-heading mb-2">إدارة المخالفات</h1>
+                        <p class="text-emerald-100 text-base">تسجيل وإدارة مخالفات الموظفين</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <svg class="w-16 h-16 text-emerald-200 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form Section -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8 fade-in">
+                <h2 class="text-xl font-bold text-text-primary mb-6 font-heading">تسجيل مخالفة جديدة</h2>
+                
+                <form id="violationForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Employee Selection -->
+                    <div>
+                        <label for="employeeSelect" class="label">اسم الموظف <span class="text-error">*</span></label>
+                        <select id="employeeSelect" class="select" required>
+                            <option value="">اختر الموظف</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Picker -->
+                    <div>
+                        <label for="violationDate" class="label">تاريخ المخالفة <span class="text-error">*</span></label>
+                        <input type="date" id="violationDate" class="input" required>
+                    </div>
+
+                    <!-- Severity Level -->
+                    <div>
+                        <label for="severityLevel" class="label">مستوى الخطورة <span class="text-error">*</span></label>
+                        <select id="severityLevel" class="select" required>
+                            <option value="">اختر مستوى الخطورة</option>
+                            <option value="severe">شديدة</option>
+                            <option value="medium">متوسطة</option>
+                            <option value="light">خفيفة</option>
+                        </select>
+                    </div>
+
+                    <!-- Reason Input -->
+                    <div class="md:col-span-2">
+                        <label for="violationReason" class="label">سبب المخالفة <span class="text-error">*</span></label>
+                        <textarea id="violationReason" class="textarea" rows="3" placeholder="أدخل تفاصيل المخالفة..." required></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn btn-error w-full md:w-auto">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            تسجيل المخالفة
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6 fade-in" style="animation-delay: 0.1s">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 w-full sm:w-auto">
+                        <div>
+                            <label for="filterDate" class="label mb-1">تصفية حسب التاريخ</label>
+                            <input type="date" id="filterDate" class="input">
+                        </div>
+                        <button id="clearFilter" class="btn btn-ghost mt-6">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            إعادة تعيين
+                        </button>
+                    </div>
+                    <div class="text-sm text-text-secondary">
+                        إجمالي المخالفات: <span id="totalCount" class="font-bold text-error">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violations Table -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden fade-in" style="animation-delay: 0.2s">
+                <div class="overflow-x-auto">
+                    <table class="violations-table" id="violationsTable">
+                        <thead>
+                            <tr>
+                                <th>اسم الموظف</th>
+                                <th>التاريخ</th>
+                                <th>السبب</th>
+                                <th>مستوى الخطورة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="violationsTableBody">
+                            <!-- Table rows will be inserted here -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-state hidden">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold mb-2">لا توجد مخالفات</h3>
+                        <p class="text-sm">لم يتم تسجيل أي مخالفات حتى الآن</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-text-primary font-heading">تعديل المخالفة</h3>
+                <button id="closeEditModal" class="action-btn">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editViolationId">
+                
+                <div>
+                    <label for="editEmployeeSelect" class="label">اسم الموظف</label>
+                    <select id="editEmployeeSelect" class="select" required>
+                        <option value="">اختر الموظف</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="editViolationDate" class="label">تاريخ المخالفة</label>
+                    <input type="date" id="editViolationDate" class="input" required>
+                </div>
+
+                <div>
+                    <label for="editSeverityLevel" class="label">مستوى الخطورة</label>
+                    <select id="editSeverityLevel" class="select" required>
+                        <option value="">اختر مستوى الخطورة</option>
+                        <option value="severe">شديدة</option>
+                        <option value="medium">متوسطة</option>
+                        <option value="light">خفيفة</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="editViolationReason" class="label">سبب المخالفة</label>
+                    <textarea id="editViolationReason" class="textarea" rows="3" required></textarea>
+                </div>
+
+                <div class="flex gap-3 justify-end pt-4">
+                    <button type="button" id="cancelEdit" class="btn btn-ghost">إلغاء</button>
+                    <button type="submit" class="btn btn-error">حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-error-light rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-text-primary mb-2 font-heading">تأكيد الحذف</h3>
+                <p class="text-text-secondary">هل أنت متأكد من حذف هذه المخالفة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            </div>
+            
+            <div class="flex gap-3 justify-center">
+                <button id="cancelDelete" class="btn btn-ghost">إلغاء</button>
+                <button id="confirmDelete" class="btn btn-error">حذف المخالفة</button>
+            </div>
+        </div>
+    </div>
+
+   <!-- Bottom Navigation -->
+   <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+        <a href="dashboard.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+            </svg>
+            <span>الرئيسية</span>
+        </a>
+
+        <a href="leaves_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>الإجازات</span>
+        </a>
+
+        <a href="rewards_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+            <span>المكافآت</span>
+        </a>
+
+        <a href="violations_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M12 9v2m0 4h.01M3.34 16l6.928-12c.77-1.333 2.694-1.333 3.464 0l6.928 12c.77 1.333-.192 3-1.732 3H5.072c-1.54 0-2.502-1.667-1.732-3z"/>
+            </svg>
+            <span>المخالفات</span>
+        </a>
+
+        <a href="statistics_overview.html" class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M5 3v18m7-14v14m7-10v10"/>
+            </svg>
+            <span>الإحصائيات</span>
+        </a>
+
+        <a href="break_time_management.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>الزمنيات</span>
+        </a>
+
+        <a href="settings.html" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0"/>
+            </svg>
+            <span>الإعدادات</span>
+        </a>
+    </div>
+</nav>
+
+    <script type="module">
+        // Firebase configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, push, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+       const firebaseConfig = {
+  apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+  authDomain: "gg52-f1a35.firebaseapp.com",
+  projectId: "gg52-f1a35",
+  storageBucket: "gg52-f1a35.firebasestorage.app",
+  messagingSenderId: "586005981678",
+  appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Global variables
+        let employees = [];
+        let violations = [];
+        let currentViolationId = null;
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const violationForm = document.getElementById('violationForm');
+        const employeeSelect = document.getElementById('employeeSelect');
+        const violationDate = document.getElementById('violationDate');
+        const severityLevel = document.getElementById('severityLevel');
+        const violationReason = document.getElementById('violationReason');
+        const violationsTableBody = document.getElementById('violationsTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const totalCount = document.getElementById('totalCount');
+        const filterDate = document.getElementById('filterDate');
+        const clearFilter = document.getElementById('clearFilter');
+        const editModal = document.getElementById('editModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        violationDate.value = today;
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            notification.className = `notification ${type}`;
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Format date to DD-MM-YYYY
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
+        // Get severity label in Arabic
+        function getSeverityLabel(severity) {
+            const labels = {
+                'severe': 'شديدة',
+                'medium': 'متوسطة',
+                'light': 'خفيفة'
+            };
+            return labels[severity] || severity;
+        }
+
+        // Get severity badge class
+        function getSeverityBadgeClass(severity) {
+            const classes = {
+                'severe': 'severity-severe',
+                'medium': 'severity-medium',
+                'light': 'severity-light'
+            };
+            return classes[severity] || 'severity-light';
+        }
+
+        // Load employees from Firebase
+        function loadEmployees() {
+            const employeesRef = ref(database, 'employees');
+            onValue(employeesRef, (snapshot) => {
+                employees = [];
+                employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+                document.getElementById('editEmployeeSelect').innerHTML = '<option value="">اختر الموظف</option>';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const employee = {
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    };
+                    employees.push(employee);
+                    
+                    const option = `<option value="${employee.id}">${employee.name}</option>`;
+                    employeeSelect.innerHTML += option;
+                    document.getElementById('editEmployeeSelect').innerHTML += option;
+                });
+            });
+        }
+
+        // Load violations from Firebase
+        function loadViolations() {
+            const violationsRef = ref(database, 'violations');
+            onValue(violationsRef, (snapshot) => {
+                violations = [];
+                
+                snapshot.forEach((childSnapshot) => {
+                    const violation = {
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    };
+                    violations.push(violation);
+                });
+                
+                renderViolations();
+            });
+        }
+
+        // Render violations table
+        function renderViolations(filteredViolations = null) {
+            const dataToRender = filteredViolations || violations;
+            violationsTableBody.innerHTML = '';
+            
+            if (dataToRender.length === 0) {
+                emptyState.classList.remove('hidden');
+                totalCount.textContent = '0';
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            totalCount.textContent = dataToRender.length;
+            
+            // Sort by date (newest first)
+            dataToRender.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            dataToRender.forEach(violation => {
+                const employee = employees.find(e => e.id === violation.employeeId);
+                const employeeName = employee ? employee.name : 'غير معروف';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td data-label="اسم الموظف">${employeeName}</td>
+                    <td data-label="التاريخ">${formatDate(violation.date)}</td>
+                    <td data-label="السبب">${violation.reason}</td>
+                    <td data-label="مستوى الخطورة">
+                        <span class="severity-badge ${getSeverityBadgeClass(violation.severity)}">
+                            ${getSeverityLabel(violation.severity)}
+                        </span>
+                    </td>
+                    <td data-label="الإجراءات">
+                        <div class="flex gap-2">
+                            <button class="action-btn edit-btn" data-id="${violation.id}" title="تعديل">
+                                <svg class="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button class="action-btn delete-btn" data-id="${violation.id}" title="حذف">
+                                <svg class="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                violationsTableBody.appendChild(row);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => openDeleteModal(btn.dataset.id));
+            });
+        }
+
+        // Submit violation form
+        violationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const violationData = {
+                employeeId: employeeSelect.value,
+                date: violationDate.value,
+                severity: severityLevel.value,
+                reason: violationReason.value,
+                timestamp: Date.now()
+            };
+            
+            try {
+                await push(ref(database, 'violations'), violationData);
+                showNotification('تم تسجيل المخالفة بنجاح', 'success');
+                violationForm.reset();
+                violationDate.value = today;
+            } catch (error) {
+                showNotification('حدث خطأ أثناء تسجيل المخالفة', 'error');
+                console.error('Error adding violation:', error);
+            }
+        });
+
+        // Filter by date
+        filterDate.addEventListener('change', () => {
+            if (filterDate.value) {
+                const filtered = violations.filter(v => v.date === filterDate.value);
+                renderViolations(filtered);
+            } else {
+                renderViolations();
+            }
+        });
+
+        // Clear filter
+        clearFilter.addEventListener('click', () => {
+            filterDate.value = '';
+            renderViolations();
+        });
+
+        // Open edit modal
+        function openEditModal(violationId) {
+            const violation = violations.find(v => v.id === violationId);
+            if (!violation) return;
+            
+            document.getElementById('editViolationId').value = violationId;
+            document.getElementById('editEmployeeSelect').value = violation.employeeId;
+            document.getElementById('editViolationDate').value = violation.date;
+            document.getElementById('editSeverityLevel').value = violation.severity;
+            document.getElementById('editViolationReason').value = violation.reason;
+            
+            editModal.classList.add('active');
+        }
+
+        // Close edit modal
+        document.getElementById('closeEditModal').addEventListener('click', () => {
+            editModal.classList.remove('active');
+        });
+
+        document.getElementById('cancelEdit').addEventListener('click', () => {
+            editModal.classList.remove('active');
+        });
+
+        // Submit edit form
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const violationId = document.getElementById('editViolationId').value;
+            const updatedData = {
+                employeeId: document.getElementById('editEmployeeSelect').value,
+                date: document.getElementById('editViolationDate').value,
+                severity: document.getElementById('editSeverityLevel').value,
+                reason: document.getElementById('editViolationReason').value
+            };
+            
+            try {
+                await update(ref(database, `violations/${violationId}`), updatedData);
+                showNotification('تم تحديث المخالفة بنجاح', 'success');
+                editModal.classList.remove('active');
+            } catch (error) {
+                showNotification('حدث خطأ أثناء تحديث المخالفة', 'error');
+                console.error('Error updating violation:', error);
+            }
+        });
+
+        // Open delete modal
+        function openDeleteModal(violationId) {
+            currentViolationId = violationId;
+            deleteModal.classList.add('active');
+        }
+
+        // Close delete modal
+        document.getElementById('cancelDelete').addEventListener('click', () => {
+            deleteModal.classList.remove('active');
+            currentViolationId = null;
+        });
+
+        // Confirm delete
+        document.getElementById('confirmDelete').addEventListener('click', async () => {
+            if (!currentViolationId) return;
+            
+            try {
+                await remove(ref(database, `violations/${currentViolationId}`));
+                showNotification('تم حذف المخالفة بنجاح', 'success');
+                deleteModal.classList.remove('active');
+                currentViolationId = null;
+            } catch (error) {
+                showNotification('حدث خطأ أثناء حذف المخالفة', 'error');
+                console.error('Error deleting violation:', error);
+            }
+        });
+
+        // Close modals on overlay click
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                editModal.classList.remove('active');
+            }
+        });
+
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                deleteModal.classList.remove('active');
+                currentViolationId = null;
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadEmployees();
+            loadViolations();
+            
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+            }, 1000);
+        });
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+</body>
+</html>
