@@ -315,7 +315,7 @@ input,
 optgroup,
 select,
 textarea {
-  font-family: inherit;
+  
   /* 1 */
   font-feature-settings: inherit;
   /* 1 */
@@ -907,10 +907,20 @@ p {
 }
 
 .btn-primary{
-  --tw-bg-opacity: 1;
-  background-color: rgb(4 120 87 / var(--tw-bg-opacity, 1));
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+ background: #059669;
+    color: white;
+    border: none;
+    border-radius: 0.875rem;
+    padding: 0.50rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
 }
 
 .btn-primary:hover{
