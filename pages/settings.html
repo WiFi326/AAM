@@ -103,7 +103,7 @@
             justify-content: center;
             gap: 0.25rem;
             padding: 0.90rem 0;
-            font-size: 0.90rem;
+            /* font-size: 0.90rem; */
             color: #6B7280;
             text-decoration: none;
             transition: all 0.2s ease;
@@ -214,7 +214,7 @@
         .employee-management-actions {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            /* gap: 1.5rem; */
             margin-bottom: 2rem;
         }
         
@@ -348,7 +348,7 @@
         }
         
         .no-employees-message {
-            text-align: center;
+            text-align: -webkit-center;
             padding: 3rem;
             color: #6B7280;
         }
@@ -585,14 +585,14 @@
                             <label class="label" for="employeeType">نوع الوظيفة</label>
                             <select id="employeeType" class="select" required>
                                 <option value="">اختر نوع الوظيفة</option>
-                                <option value="Technician">فني (Technician)</option>
-                                <option value="Joker">جوكر (Joker)</option>
-                                <option value="Supervisor">مشرف (Supervisor)</option>
+                                <option value="Technician">فني</option>
+                                <option value="Joker">جوكر</option>
+                                <option value="Supervisor">متابع</option>
                             </select>
                         </div>
                         <div>
                             <label class="label" for="employeePhone">رقم الهاتف</label>
-                            <input type="tel" id="employeePhone" class="input" placeholder="+966 5X XXX XXXX" required>
+                            <input type="tel" id="employeePhone" class="input" placeholder="078* *** ****" required>
                         </div>
                     </div>
                     
