@@ -719,6 +719,7 @@
                         <th>النوع</th>
                         <th>التاريخ</th>
                         <th>التفاصيل</th>
+                         <th>الملاحظات</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -797,430 +798,535 @@
 </nav>
 
 
-    <script type="module">
-        // Firebase configuration
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  <script type="module">
+    // Firebase configuration
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
-            authDomain: "gg52-f1a35.firebaseapp.com",
-            projectId: "gg52-f1a35",
-            storageBucket: "gg52-f1a35.firebasestorage.app",
-            messagingSenderId: "586005981678",
-            appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+    const firebaseConfig = {
+        apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+        authDomain: "gg52-f1a35.firebasestorage.app",
+        projectId: "gg52-f1a35",
+        storageBucket: "gg52-f1a35.firebasestorage.app",
+        messagingSenderId: "586005981678",
+        appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    let allStatistics = [];
+    let filteredStatistics = [];
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
+    let allEmployees = [];
+
+    // ====== LOADING SCREEN ======
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+        }, 1000);
+    });
+
+    // ====== NOTIFICATION SYSTEM ======
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const notificationIcon = notification?.querySelector('.notification-icon');
+        
+        if (!notification || !notificationMessage) return;
+        
+        notificationMessage.textContent = message;
+        notification.className = `notification ${type}`;
+        
+        if (notificationIcon) {
+            if (type === 'success') {
+                notificationIcon.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>';
+            } else if (type === 'error') {
+                notificationIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
+            }
+        }
+        
+        notification.classList.add('show');
+        
+        setTimeout(function() {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    // ====== CONFIRMATION DIALOG ======
+    function showConfirmation(title, message, onConfirm) {
+        const dialog = document.getElementById('confirmationDialog');
+        const confirmationTitle = document.getElementById('confirmationTitle');
+        const confirmationMessage = document.getElementById('confirmationMessage');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        if (!dialog || !confirmationTitle || !confirmationMessage || !confirmBtn || !cancelBtn) return;
+        
+        confirmationTitle.textContent = title;
+        confirmationMessage.textContent = message;
+        dialog.classList.add('show');
+        
+        const originalConfirmHandler = confirmBtn.onclick;
+        const originalCancelHandler = cancelBtn.onclick;
+        
+        confirmBtn.onclick = function() {
+            onConfirm();
+            dialog.classList.remove('show');
+            confirmBtn.onclick = originalConfirmHandler;
+            cancelBtn.onclick = originalCancelHandler;
         };
+        
+        cancelBtn.onclick = function() {
+            dialog.classList.remove('show');
+            confirmBtn.onclick = originalConfirmHandler;
+            cancelBtn.onclick = originalCancelHandler;
+        };
+    }
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+    // Format date
+    function formatDate(dateString) {
+        if (!dateString) return 'غير محدد';
+        
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            return date.toLocaleDateString('ar-EN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return dateString;
+        }
+    }
 
-        let allStatistics = [];
-        let filteredStatistics = [];
-        let currentSortColumn = null;
-        let currentSortDirection = 'asc';
+    // Get type label
+    function getTypeLabel(type) {
+        const labels = {
+            'leave': 'إجازة',
+            'reward': 'مكافأة',
+            'violation': 'مخالفة'
+        };
+        return labels[type] || type;
+    }
 
-        // ====== LOADING SCREEN ======
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) loadingScreen.classList.add('hidden');
-            }, 1000);
+    // Get row class
+    function getRowClass(type) {
+        const classes = {
+            'leave': 'row-leave',
+            'reward': 'row-reward',
+            'violation': 'row-violation'
+        };
+        return classes[type] || '';
+    }
+
+    // Get type badge class
+    function getTypeBadgeClass(type) {
+        const classes = {
+            'leave': 'type-leave',
+            'reward': 'type-reward',
+            'violation': 'type-violation'
+        };
+        return classes[type] || '';
+    }
+
+    // Get leave type in Arabic
+    function getLeaveTypeArabic(type) {
+        const types = {
+            'daily': 'يومية',
+            'sick': 'مرضية',
+            'open': 'مفتوحة',
+            'unpaid': 'بدون راتب'
+        };
+        return types[type] || type;
+    }
+
+    // Get severity level in Arabic
+    function getSeverityLabel(severity) {
+        const labels = {
+            'severe': 'شديدة',
+            'medium': 'متوسطة',
+            'light': 'خفيفة'
+        };
+        return labels[severity] || severity;
+    }
+
+    // دالة لتحميل الموظفين
+    function loadEmployees() {
+        return new Promise((resolve) => {
+            const employeesRef = ref(database, 'employees');
+            onValue(employeesRef, (snapshot) => {
+                allEmployees = [];
+                snapshot.forEach((childSnapshot) => {
+                    allEmployees.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                console.log('تم تحميل الموظفين:', allEmployees.length);
+                resolve();
+            }, (error) => {
+                console.error('خطأ في تحميل الموظفين:', error);
+                showNotification('حدث خطأ في تحميل بيانات الموظفين', 'error');
+                resolve();
+            });
+        });
+    }
+
+    // دالة للحصول على اسم الموظف بناءً على الـ ID
+    function getEmployeeName(employeeId) {
+        if (!employeeId) return 'غير معروف';
+        const employee = allEmployees.find(emp => emp.id === employeeId);
+        return employee ? employee.name : 'غير معروف';
+    }
+
+    // Load all statistics from Firebase
+    async function loadStatistics() {
+        console.log('بدء تحميل الإحصائيات...');
+        
+        // تأكد من تحميل الموظفين أولاً
+        if (allEmployees.length === 0) {
+            console.log('تحميل الموظفين أولاً...');
+            await loadEmployees();
+        }
+        
+        allStatistics = [];
+        let loadedCount = 0;
+        const totalTypes = 3; // leaves, rewards, violations
+        
+        // Load leaves
+        const leavesRef = ref(database, 'leaves');
+        onValue(leavesRef, (snapshot) => {
+            console.log('تحميل الإجازات...');
+            snapshot.forEach((childSnapshot) => {
+                const leave = childSnapshot.val();
+                allStatistics.push({
+                    id: childSnapshot.key,
+                    type: 'leave',
+                    employeeName: getEmployeeName(leave.employeeId),
+                    date: leave.startDate,
+                    details: getLeaveTypeArabic(leave.leaveType) || 'إجازة', // فقط نوع الإجازة
+                    notes: '-' // ملاحظات للإجازة تكون "-"
+                });
+            });
+            loadedCount++;
+            if (loadedCount === totalTypes) {
+                console.log('تم تحميل جميع البيانات');
+                updateDisplay();
+            }
+        }, (error) => {
+            console.error('خطأ في تحميل الإجازات:', error);
+            loadedCount++;
         });
 
-        // ====== NOTIFICATION SYSTEM ======
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationMessage = document.getElementById('notificationMessage');
-            const notificationIcon = notification?.querySelector('.notification-icon');
-            
-            if (!notification || !notificationMessage) return;
-            
-            notificationMessage.textContent = message;
-            notification.className = `notification ${type}`;
-            
-            if (notificationIcon) {
-                if (type === 'success') {
-                    notificationIcon.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>';
-                } else if (type === 'error') {
-                    notificationIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
-                }
+        // Load rewards
+        const rewardsRef = ref(database, 'rewards');
+        onValue(rewardsRef, (snapshot) => {
+            console.log('تحميل المكافآت...');
+            snapshot.forEach((childSnapshot) => {
+                const reward = childSnapshot.val();
+                allStatistics.push({
+                    id: childSnapshot.key,
+                    type: 'reward',
+                    employeeName: getEmployeeName(reward.employeeId),
+                    date: reward.date,
+                    details: '-', // التفاصيل للمكافأة تكون "-"
+                    notes: reward.reason || 'لا يوجد سبب' // سبب المكافأة في الملاحظات
+                });
+            });
+            loadedCount++;
+            if (loadedCount === totalTypes) {
+                console.log('تم تحميل جميع البيانات');
+                updateDisplay();
             }
-            
-            notification.classList.add('show');
-            
-            setTimeout(function() {
-                notification.classList.remove('show');
-            }, 3000);
+        }, (error) => {
+            console.error('خطأ في تحميل المكافآت:', error);
+            loadedCount++;
+        });
+
+        // Load violations
+        const violationsRef = ref(database, 'violations');
+        onValue(violationsRef, (snapshot) => {
+            console.log('تحميل المخالفات...');
+            snapshot.forEach((childSnapshot) => {
+                const violation = childSnapshot.val();
+                allStatistics.push({
+                    id: childSnapshot.key,
+                    type: 'violation',
+                    employeeName: getEmployeeName(violation.employeeId),
+                    date: violation.date,
+                    details: getSeverityLabel(violation.severity) || 'غير محدد', // مستوى الخطورة
+                    notes: violation.reason || 'لا يوجد سبب' // سبب المخالفة في الملاحظات
+                });
+            });
+            loadedCount++;
+            if (loadedCount === totalTypes) {
+                console.log('تم تحميل جميع البيانات');
+                updateDisplay();
+            }
+        }, (error) => {
+            console.error('خطأ في تحميل المخالفات:', error);
+            loadedCount++;
+        });
+    }
+
+    // Update display with current data
+    function updateDisplay() {
+        console.log('تحديث العرض، عدد السجلات:', allStatistics.length);
+        filteredStatistics = [...allStatistics];
+        
+        // Apply search filter
+        const searchTerm = document.getElementById('employeeSearch')?.value.trim().toLowerCase() || '';
+        if (searchTerm) {
+            filteredStatistics = filteredStatistics.filter(stat => 
+                stat.employeeName && stat.employeeName.toLowerCase().includes(searchTerm)
+            );
         }
 
-        // ====== CONFIRMATION DIALOG ======
-        function showConfirmation(title, message, onConfirm) {
-            const dialog = document.getElementById('confirmationDialog');
-            const confirmationTitle = document.getElementById('confirmationTitle');
-            const confirmationMessage = document.getElementById('confirmationMessage');
-            const confirmBtn = document.getElementById('confirmBtn');
-            const cancelBtn = document.getElementById('cancelBtn');
-            
-            if (!dialog || !confirmationTitle || !confirmationMessage || !confirmBtn || !cancelBtn) return;
-            
-            confirmationTitle.textContent = title;
-            confirmationMessage.textContent = message;
-            dialog.classList.add('show');
-            
-            const originalConfirmHandler = confirmBtn.onclick;
-            const originalCancelHandler = cancelBtn.onclick;
-            
-            confirmBtn.onclick = function() {
-                onConfirm();
-                dialog.classList.remove('show');
-                confirmBtn.onclick = originalConfirmHandler;
-                cancelBtn.onclick = originalCancelHandler;
-            };
-            
-            cancelBtn.onclick = function() {
-                dialog.classList.remove('show');
-                confirmBtn.onclick = originalConfirmHandler;
-                cancelBtn.onclick = originalCancelHandler;
-            };
-        }
-
-        // Format date
-        function formatDate(dateString) {
-            if (!dateString) return 'غير محدد';
-            
-            try {
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) return dateString;
+        // Sort data
+        if (currentSortColumn) {
+            filteredStatistics.sort((a, b) => {
+                let aVal = a[currentSortColumn];
+                let bVal = b[currentSortColumn];
                 
-                return date.toLocaleDateString('ar-SA', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            } catch (error) {
-                return dateString;
-            }
-        }
-
-        // Get type label
-        function getTypeLabel(type) {
-            const labels = {
-                'leave': 'إجازة',
-                'reward': 'مكافأة',
-                'violation': 'مخالفة'
-            };
-            return labels[type] || type;
-        }
-
-        // Get row class
-        function getRowClass(type) {
-            const classes = {
-                'leave': 'row-leave',
-                'reward': 'row-reward',
-                'violation': 'row-violation'
-            };
-            return classes[type] || '';
-        }
-
-        // Get type badge class
-        function getTypeBadgeClass(type) {
-            const classes = {
-                'leave': 'type-leave',
-                'reward': 'type-reward',
-                'violation': 'type-violation'
-            };
-            return classes[type] || '';
-        }
-
-        // Load all statistics from Firebase
-        function loadStatistics() {
-            allStatistics = [];
-            
-            // Load leaves
-            const leavesRef = ref(database, 'leaves');
-            onValue(leavesRef, (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const leave = childSnapshot.val();
-                    allStatistics.push({
-                        id: childSnapshot.key,
-                        type: 'leave',
-                        employeeName: leave.employeeName,
-                        date: leave.startDate,
-                        details: `${leave.leaveType || 'إجازة'} - من ${formatDate(leave.startDate)} إلى ${formatDate(leave.endDate)}`
-                    });
-                });
-                updateDisplay();
-            });
-
-            // Load rewards
-            const rewardsRef = ref(database, 'rewards');
-            onValue(rewardsRef, (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const reward = childSnapshot.val();
-                    allStatistics.push({
-                        id: childSnapshot.key,
-                        type: 'reward',
-                        employeeName: reward.employeeName,
-                        date: reward.date,
-                        details: reward.reason || 'لا توجد تفاصيل'
-                    });
-                });
-                updateDisplay();
-            });
-
-            // Load violations
-            const violationsRef = ref(database, 'violations');
-            onValue(violationsRef, (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const violation = childSnapshot.val();
-                    allStatistics.push({
-                        id: childSnapshot.key,
-                        type: 'violation',
-                        employeeName: violation.employeeName,
-                        date: violation.date,
-                        details: `${violation.severity || 'غير محدد'} - ${violation.reason || 'لا يوجد سبب'}`
-                    });
-                });
-                updateDisplay();
+                if (currentSortColumn === 'date') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                }
+                
+                if (currentSortDirection === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
             });
         }
 
-        // Update display with current data
-        function updateDisplay() {
-            filteredStatistics = [...allStatistics];
-            
-            // Apply search filter
-            const searchTerm = document.getElementById('employeeSearch')?.value.trim().toLowerCase() || '';
-            if (searchTerm) {
-                filteredStatistics = filteredStatistics.filter(stat => 
-                    stat.employeeName.toLowerCase().includes(searchTerm)
-                );
-            }
+        renderTable();
+        renderMobileCards();
+        updateRecordCount();
+    }
 
-            // Sort data
-            if (currentSortColumn) {
-                filteredStatistics.sort((a, b) => {
-                    let aVal = a[currentSortColumn];
-                    let bVal = b[currentSortColumn];
-                    
-                    if (currentSortColumn === 'date') {
-                        aVal = new Date(aVal);
-                        bVal = new Date(bVal);
-                    }
-                    
-                    if (currentSortDirection === 'asc') {
-                        return aVal > bVal ? 1 : -1;
-                    } else {
-                        return aVal < bVal ? 1 : -1;
-                    }
-                });
-            }
-
-            renderTable();
-            renderMobileCards();
-            updateRecordCount();
+    // Render desktop table
+    function renderTable() {
+        const tableBody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (!tableBody || !emptyState) return;
+        
+        if (filteredStatistics.length === 0) {
+            tableBody.innerHTML = '';
+            emptyState.style.display = 'block';
+            return;
         }
+        
+        emptyState.style.display = 'none';
+        
+        tableBody.innerHTML = filteredStatistics.map(stat => `
+            <tr class="${getRowClass(stat.type)}">
+                <td>${stat.employeeName || 'غير معروف'}</td>
+                <td>
+                    <span class="type-badge ${getTypeBadgeClass(stat.type)}">
+                        ${getTypeLabel(stat.type)}
+                    </span>
+                </td>
+                <td>${formatDate(stat.date)}</td>
+                <td>${stat.details || '-'}</td>
+                <td>${stat.notes || '-'}</td>
+            </tr>
+        `).join('');
+    }
 
-        // Render desktop table
-        function renderTable() {
-            const tableBody = document.getElementById('tableBody');
-            const emptyState = document.getElementById('emptyState');
-            
-            if (!tableBody || !emptyState) return;
-            
-            if (filteredStatistics.length === 0) {
-                tableBody.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            
-            tableBody.innerHTML = filteredStatistics.map(stat => `
-                <tr class="${getRowClass(stat.type)}">
-                    <td>${stat.employeeName}</td>
-                    <td>
-                        <span class="type-badge ${getTypeBadgeClass(stat.type)}">
-                            ${getTypeLabel(stat.type)}
-                        </span>
-                    </td>
-                    <td>${formatDate(stat.date)}</td>
-                    <td>${stat.details}</td>
-                </tr>
-            `).join('');
+    // Render mobile cards
+    function renderMobileCards() {
+        const mobileCards = document.getElementById('mobileCards');
+        
+        if (!mobileCards) return;
+        
+        if (filteredStatistics.length === 0) {
+            mobileCards.innerHTML = '';
+            return;
         }
-
-        // Render mobile cards
-        function renderMobileCards() {
-            const mobileCards = document.getElementById('mobileCards');
-            
-            if (!mobileCards) return;
-            
-            if (filteredStatistics.length === 0) {
-                mobileCards.innerHTML = '';
-                return;
-            }
-            
-            mobileCards.innerHTML = filteredStatistics.map(stat => `
-                <div class="stat-card-mobile ${getRowClass(stat.type)}">
-                    <div class="card-header-mobile">
-                        <h3 style="font-size: 1.125rem; font-weight: 700; color: #111827;">${stat.employeeName}</h3>
-                        <span class="type-badge ${getTypeBadgeClass(stat.type)}">
-                            ${getTypeLabel(stat.type)}
-                        </span>
+        
+        mobileCards.innerHTML = filteredStatistics.map(stat => `
+            <div class="stat-card-mobile ${getRowClass(stat.type)}">
+                <div class="card-header-mobile">
+                    <h3 style="font-size: 1.125rem; font-weight: 700; color: #111827;">${stat.employeeName || 'غير معروف'}</h3>
+                    <span class="type-badge ${getTypeBadgeClass(stat.type)}">
+                        ${getTypeLabel(stat.type)}
+                    </span>
+                </div>
+                <div class="card-body-mobile">
+                    <div class="card-field-mobile">
+                        <span class="field-label-mobile">التاريخ:</span>
+                        <span class="field-value-mobile">${formatDate(stat.date)}</span>
                     </div>
-                    <div class="card-body-mobile">
-                        <div class="card-field-mobile">
-                            <span class="field-label-mobile">التاريخ:</span>
-                            <span class="field-value-mobile">${formatDate(stat.date)}</span>
-                        </div>
-                        <div class="card-field-mobile">
-                            <span class="field-label-mobile">التفاصيل:</span>
-                            <span class="field-value-mobile">${stat.details}</span>
-                        </div>
+                    <div class="card-field-mobile">
+                        <span class="field-label-mobile">التفاصيل:</span>
+                        <span class="field-value-mobile">${stat.details || '-'}</span>
+                    </div>
+                    <div class="card-field-mobile">
+                        <span class="field-label-mobile">الملاحظات:</span>
+                        <span class="field-value-mobile">${stat.notes || '-'}</span>
                     </div>
                 </div>
-            `).join('');
+            </div>
+        `).join('');
+    }
+
+    // Update record count
+    function updateRecordCount() {
+        const recordCountElement = document.getElementById('recordCount');
+        if (recordCountElement) {
+            recordCountElement.textContent = filteredStatistics.length;
+        }
+    }
+
+    // ====== INITIALIZE EVENT LISTENERS ======
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log('بدء تهيئة الصفحة...');
+        
+        try {
+            // تحميل البيانات
+            await loadEmployees();
+            await loadStatistics();
+            showNotification('تم تحميل البيانات بنجاح', 'success');
+        } catch (error) {
+            console.error('خطأ في تحميل البيانات:', error);
+            showNotification('حدث خطأ في تحميل البيانات', 'error');
         }
 
-        // Update record count
-        function updateRecordCount() {
-            const recordCountElement = document.getElementById('recordCount');
-            if (recordCountElement) {
-                recordCountElement.textContent = filteredStatistics.length;
-            }
+        // Search functionality
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('employeeSearch');
+        
+        if (searchBtn && searchInput) {
+            searchBtn.addEventListener('click', () => {
+                const searchTerm = searchInput.value.trim().toLowerCase();
+                
+                if (searchTerm === '') {
+                    filteredStatistics = [...allStatistics];
+                } else {
+                    filteredStatistics = allStatistics.filter(stat => 
+                        stat.employeeName && stat.employeeName.toLowerCase().includes(searchTerm)
+                    );
+                }
+                
+                renderTable();
+                renderMobileCards();
+                updateRecordCount();
+                
+                if (searchTerm !== '') {
+                    const resultCount = filteredStatistics.length;
+                    const message = resultCount === 0 ? 
+                        'لم يتم العثور على نتائج' : 
+                        `تم العثور على ${resultCount} نتيجة`;
+                    showNotification(message, resultCount > 0 ? 'success' : 'error');
+                }
+            });
+
+            // Add Enter key support for search
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchBtn.click();
+                }
+            });
         }
 
-        // ====== INITIALIZE EVENT LISTENERS ======
-        document.addEventListener('DOMContentLoaded', () => {
-            // Search functionality
-            const searchBtn = document.getElementById('searchBtn');
-            const searchInput = document.getElementById('employeeSearch');
-            
-            if (searchBtn && searchInput) {
-                searchBtn.addEventListener('click', () => {
-                    const searchTerm = searchInput.value.trim().toLowerCase();
-                    
-                    if (searchTerm === '') {
-                        filteredStatistics = [...allStatistics];
-                    } else {
-                        filteredStatistics = allStatistics.filter(stat => 
-                            stat.employeeName.toLowerCase().includes(searchTerm)
-                        );
-                    }
-                    
-                    renderTable();
-                    renderMobileCards();
-                    updateRecordCount();
-                    
-                    if (searchTerm !== '') {
-                        const resultCount = filteredStatistics.length;
-                        const message = resultCount === 0 ? 
-                            'لم يتم العثور على نتائج' : 
-                            `تم العثور على ${resultCount} نتيجة`;
-                        showNotification(message, resultCount > 0 ? 'success' : 'error');
-                    }
-                });
+        // Refresh functionality
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) overlay.classList.remove('hidden');
+                
+                try {
+                    await loadEmployees();
+                    allStatistics = [];
+                    await loadStatistics();
+                    showNotification('تم تحديث البيانات بنجاح', 'success');
+                } catch (error) {
+                    showNotification('حدث خطأ أثناء تحديث البيانات', 'error');
+                    console.error(error);
+                } finally {
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            });
+        }
 
-                // Add Enter key support for search
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        searchBtn.click();
-                    }
+        // Export to Excel functionality
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                if (allStatistics.length === 0) {
+                    showNotification('لا توجد بيانات للتصدير', 'error');
+                    return;
+                }
+                
+                // Sort alphabetically by employee name
+                const sortedData = [...allStatistics].sort((a, b) => {
+                    const nameA = a.employeeName || 'غير معروف';
+                    const nameB = b.employeeName || 'غير معروف';
+                    return nameA.localeCompare(nameB, 'ar');
                 });
-            }
-
-            // Refresh functionality
-            const refreshBtn = document.getElementById('refreshBtn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', () => {
-                    const overlay = document.getElementById('loadingOverlay');
-                    if (overlay) overlay.classList.remove('hidden');
+                
+                // Create CSV content with proper Arabic encoding
+                let csvContent = '\uFEFF'; // UTF-8 BOM for Arabic support
+                csvContent += '"اسم الموظف","النوع","التاريخ","التفاصيل","الملاحظات"\n';
+                
+                sortedData.forEach(stat => {
+                    const row = [
+                        stat.employeeName || 'غير معروف',
+                        getTypeLabel(stat.type),
+                        formatDate(stat.date),
+                        stat.details || '-',
+                        stat.notes || '-'
+                    ].map(field => {
+                        // Escape quotes and wrap in quotes
+                        const escapedField = String(field).replace(/"/g, '""');
+                        return `"${escapedField}"`;
+                    }).join(',');
                     
+                    csvContent += row + '\n';
+                });
+                
+                // Create download link
+                try {
+                    const blob = new Blob([csvContent], { 
+                        type: 'text/csv;charset=utf-8;' 
+                    });
+                    
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    link.href = url;
+                    link.download = `إحصائيات_الموظفين_${today}.csv`;
+                    link.style.visibility = 'hidden';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // Cleanup
                     setTimeout(() => {
-                        loadStatistics();
-                        if (overlay) overlay.classList.add('hidden');
-                        showNotification('تم تحديث البيانات بنجاح', 'success');
-                    }, 1000);
-                });
-            }
-
-            // Export to Excel functionality
-            const exportBtn = document.getElementById('exportBtn');
-            if (exportBtn) {
-                exportBtn.addEventListener('click', () => {
-                    if (allStatistics.length === 0) {
-                        showNotification('لا توجد بيانات للتصدير', 'error');
-                        return;
-                    }
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
                     
-                    // Sort alphabetically by employee name
-                    const sortedData = [...allStatistics].sort((a, b) => {
-                        const nameA = a.employeeName || 'غير معروف';
-                        const nameB = b.employeeName || 'غير معروف';
-                        return nameA.localeCompare(nameB, 'ar');
-                    });
-                    
-                    // Create CSV content with proper Arabic encoding
-                    let csvContent = '\uFEFF'; // UTF-8 BOM for Arabic support
-                    csvContent += '"اسم الموظف","النوع","التاريخ","التفاصيل"\n';
-                    
-                    sortedData.forEach(stat => {
-                        const row = [
-                            stat.employeeName || 'غير معروف',
-                            getTypeLabel(stat.type),
-                            formatDate(stat.date),
-                            stat.details || 'لا توجد تفاصيل'
-                        ].map(field => {
-                            // Escape quotes and wrap in quotes
-                            const escapedField = String(field).replace(/"/g, '""');
-                            return `"${escapedField}"`;
-                        }).join(',');
-                        
-                        csvContent += row + '\n';
-                    });
-                    
-                    // Create download link
-                    try {
-                        const blob = new Blob([csvContent], { 
-                            type: 'text/csv;charset=utf-8;' 
-                        });
-                        
-                        const link = document.createElement('a');
-                        const url = URL.createObjectURL(blob);
-                        const today = new Date().toISOString().split('T')[0];
-                        
-                        link.href = url;
-                        link.download = `إحصائيات_الموظفين_${today}.csv`;
-                        link.style.visibility = 'hidden';
-                        
-                        document.body.appendChild(link);
-                        link.click();
-                        
-                        // Cleanup
-                        setTimeout(() => {
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                        
-                        showNotification('تم تصدير البيانات بنجاح', 'success');
-                    } catch (error) {
-                        console.error('Error exporting data:', error);
-                        showNotification('فشل تصدير البيانات', 'error');
-                    }
-                });
-            }
-
-            // Initialize data
-            loadStatistics();
-        });
-
-        // Initialize on page load
-        window.addEventListener('load', () => {
-            loadStatistics();
-        });
-    </script>
+                    showNotification('تم تصدير البيانات بنجاح', 'success');
+                } catch (error) {
+                    console.error('Error exporting data:', error);
+                    showNotification('فشل تصدير البيانات', 'error');
+                }
+            });
+        }
+    });
+</script>
     
-    <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+    <!-- <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script> -->
 </body>
 </html>
