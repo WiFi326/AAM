@@ -759,7 +759,7 @@ h1, h2, h3, h4, h5, h6{
   /* font-family: Lexend, sans-serif; */
   font-weight: 600;
   --tw-text-opacity: 1;
-  color: rgb(17 24 39 / var(--tw-text-opacity, 1));
+  /* color: rgb(17 24 39 / var(--tw-text-opacity, 1)); */
 }
 
 h1{
@@ -1919,7 +1919,7 @@ h5{
 }
 
 .from-primary{
-  --tw-gradient-from: #047857 var(--tw-gradient-from-position);
+  --tw-gradient-from: #2a439f var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(4 120 87 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
@@ -1965,7 +1965,7 @@ h5{
 }
 
 .to-secondary{
-  --tw-gradient-to: #065F46 var(--tw-gradient-to-position);
+  --tw-gradient-to: #49236f var(--tw-gradient-to-position);
 }
 
 .p-2{
@@ -2034,7 +2034,7 @@ h5{
 
 .py-8{
   padding-top: 2rem;
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
 }
 
 .pr-10{
