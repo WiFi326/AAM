@@ -762,7 +762,7 @@
                     };
                     employees.push(employee);
                     
-                    const option = `<option value="${employee.id}">${employee.name} - ${getJobTypeArabic(employee.jobType)}</option>`;
+                    const option = `<option value="${employee.id}">${employee.name} - ${getJobTypeArabic(employee.type)}</option>`;
                     employeeSelect.innerHTML += option;
                     editEmployeeSelect.innerHTML += option;
                 });
@@ -818,7 +818,7 @@
                 const row = `
                     <tr>
                         <td class="font-medium">${employee.name}</td>
-                        <td>${getJobTypeArabic(employee.jobType)}</td>
+                        <td>${getJobTypeArabic(employee.type)}</td>
                         <td>
                             <span class="leave-badge ${getLeaveBadgeClass(leave.leaveType)}">
                                 ${getLeaveTypeArabic(leave.leaveType)}
@@ -851,7 +851,7 @@
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <h3 class="font-bold text-text-primary mb-1">${employee.name}</h3>
-                                <p class="text-sm text-text-secondary">${getJobTypeArabic(employee.jobType)}</p>
+                                <p class="text-sm text-text-secondary">${getJobTypeArabic(employee.type)}</p>
                             </div>
                             <span class="leave-badge ${getLeaveBadgeClass(leave.leaveType)}">
                                 ${getLeaveTypeArabic(leave.leaveType)}
