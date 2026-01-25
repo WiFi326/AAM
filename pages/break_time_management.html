@@ -390,8 +390,8 @@
             <div class="max-w-7xl mx-auto">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 class="text-3xl font-bold font-heading mb-1">إدارة أوقات الاستراحة</h1>
-                        <p class="text-emerald-100 text-sm">تسجيل وإدارة فترات استراحة الموظفين</p>
+                        <h1 class="text-3xl font-bold font-heading mb-1">إدارة الزمنيات </h1>
+                        <p class="text-emerald-100 text-sm">تسجيل وإدارة زمنيات  الموظفين</p>
                     </div>
                     <div class="hidden sm:block">
                         <svg class="w-14 h-14 text-emerald-200 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,7 +409,7 @@
                     <svg class="w-6 h-6 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                    تسجيل استراحة جديدة
+                    تسجيل زمنية جديدة
                 </h2>
                 
                 <form id="breakForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -429,13 +429,13 @@
 
                     <!-- Break Start Time -->
                     <div>
-                        <label for="breakTime" class="label">وقت بداية الاستراحة <span class="text-error">*</span></label>
+                        <label for="breakTime" class="label">وقت الزمنية  <span class="text-error">*</span></label>
                         <input type="time" id="breakTime" class="input" required>
                     </div>
 
                     <!-- Duration -->
                     <div>
-                        <label for="duration" class="label">مدة الاستراحة <span class="text-error">*</span></label>
+                        <label for="duration" class="label">مدة الزمنية <span class="text-error">*</span></label>
                         <select id="duration" class="select" required>
                             <option value="">اختر المدة</option>
                             <option value="15">15 دقيقة</option>
@@ -528,7 +528,7 @@
                         <svg class="w-6 h-6 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
-                        سجل أوقات الاستراحة
+                        سجل أوقات الزمنيات
                     </span>
                     <span id="recordCount" class="text-sm font-normal text-text-secondary">0 سجل</span>
                 </h2>
@@ -564,7 +564,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <h3 class="text-lg font-semibold text-text-primary mb-2">لا توجد سجلات</h3>
-                    <p class="text-text-secondary">لم يتم تسجيل أي استراحات بعد</p>
+                    <p class="text-text-secondary">لم يتم تسجيل أي زمنيات بعد</p>
                 </div>
             </div>
         </section>
@@ -839,7 +839,7 @@
                     };
                     employees.push(employee);
                     
-                    const option = `<option value="${employee.id}">${employee.name} - ${getJobTypeArabic(employee.jobType)}</option>`;
+                    const option = `<option value="${employee.id}">${employee.name} - ${getJobTypeArabic(employee.type)}</option>`;
                     employeeSelect.innerHTML += option;
                     editEmployeeSelect.innerHTML += option;
                     searchEmployee.innerHTML += option;
