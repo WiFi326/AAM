@@ -183,64 +183,7 @@
             }
         }
         
-         /* Bottom Navigation Styles */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #E5E7EB;
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-            z-index: 100;
-        }
-
-        .bottom-nav-inner {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-}
         
-        .nav-item {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.25rem;
-            padding: 0.90rem 0;
-            /* font-size: 0.90rem; */
-            color: #6B7280;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        
-        .nav-item:hover {
-            background-color: #F3F4F6;
-        }
-        
-        .nav-item.active {
-            color: #047857;
-            background: rgba(4,120,87,0.08);
-        }
-        
-        .nav-item.active .nav-icon {
-            color: #047857;
-        }
-        
-        .nav-item .nav-icon {
-            width: 24px;
-            height: 24px;
-        }
-        
-        .nav-label {
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        /* Content padding for bottom nav */
-        .main-content {
-            padding-bottom: 80px;
-        }
         
         /* Empty State */
         .empty-state {
@@ -652,59 +595,7 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
-   <nav class="bottom-nav">
-    <div class="bottom-nav-inner">
-        <a href="dashboard.html" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-            </svg>
-            <span>الرئيسية</span>
-        </a>
-
-        <a href="leaves_management.html" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span>الإجازات</span>
-        </a>
-
-        <a href="rewards_management.html" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-            </svg>
-            <span>المكافآت</span>
-        </a>
-
-        <a href="violations_management.html" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" d="M12 9v2m0 4h.01M3.34 16l6.928-12c.77-1.333 2.694-1.333 3.464 0l6.928 12c.77 1.333-.192 3-1.732 3H5.072c-1.54 0-2.502-1.667-1.732-3z"/>
-            </svg>
-            <span>المخالفات</span>
-        </a>
-
-        <a href="statistics_overview.html" class="nav-item active">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" d="M5 3v18m7-14v14m7-10v10"/>
-            </svg>
-            <span>الإحصائيات</span>
-        </a>
-
-        <a href="break_time_management.html" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span>الزمنيات</span>
-        </a>
-
-        <a href="settings.html" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0"/>
-            </svg>
-            <span>الإعدادات</span>
-        </a>
-    </div>
-</nav>
+ 
 
     <script type="module">
         // Firebase configuration
@@ -1174,6 +1065,8 @@
             }, 1000);
         });
     </script>
+    <!-- تضمين الشريط السفلي عبر JavaScript -->
+<script src="loadBottomNav.js"></script>
 <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
 </body>
 </html>
