@@ -390,6 +390,8 @@
   <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2"></script>
   </head>
 <body class="bg-background">
+    
+
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="spinner"></div>
@@ -722,8 +724,9 @@
         import { getDatabase, ref, push, set, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
      const firebaseConfig = {
-  apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+   apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
   authDomain: "gg52-f1a35.firebaseapp.com",
+  databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
   projectId: "gg52-f1a35",
   storageBucket: "gg52-f1a35.firebasestorage.app",
   messagingSenderId: "586005981678",
@@ -794,6 +797,8 @@
                 listContainer.classList.remove('show');
             }
         }
+
+        
 
         // Load employees
         function loadEmployees() {

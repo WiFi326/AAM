@@ -908,7 +908,7 @@ h5{
 }
 
 .btn-primary{
- background: #059669;
+ background: linear-gradient(169deg, #49236f 60%, #2a439f 100%);
     color: white;
     border: none;
     border-radius: 0.875rem;
