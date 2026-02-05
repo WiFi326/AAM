@@ -949,10 +949,10 @@ h5{
 .btn-outline{
   border-width: 2px;
   --tw-border-opacity: 1;
-  border-color: rgb(4 120 87 / var(--tw-border-opacity, 1));
+  border-color: rgb(79 21 209 / 97%);
   background-color: transparent;
   --tw-text-opacity: 1;
-  color: rgb(4 120 87 / var(--tw-text-opacity, 1));
+  color: rgb(12 4 120)
 }
 
 .btn-outline:hover{
