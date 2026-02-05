@@ -314,74 +314,47 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+// احصائيات عامة بدون تاريخ
+function getTotalStats() {
 
-        // Get current month statistics (الحفاظ على الوظائف الأصلية)
-        function getCurrentMonthStats() {
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
+  // إجمالي الإجازات
+  const leavesRef = ref(database, 'leaves');
+  onValue(leavesRef, (snapshot) => {
+    document.getElementById('leavesCount').textContent = snapshot.exists()
+      ? snapshot.size
+      : 0;
+  });
 
-            // Leaves count
-            const leavesRef = ref(database, 'leaves');
-            onValue(leavesRef, (snapshot) => {
-                let count = 0;
-                snapshot.forEach((childSnapshot) => {
-                    const leave = childSnapshot.val();
-                    const leaveDate = new Date(leave.startDate);
-                    if (leaveDate.getMonth() === currentMonth && leaveDate.getFullYear() === currentYear) {
-                        count++;
-                    }
-                });
-                document.getElementById('leavesCount').textContent = count;
-            });
+  // إجمالي المكافآت
+  const rewardsRef = ref(database, 'rewards');
+  onValue(rewardsRef, (snapshot) => {
+    document.getElementById('rewardsCount').textContent = snapshot.exists()
+      ? snapshot.size
+      : 0;
+  });
 
-            // Rewards count
-            const rewardsRef = ref(database, 'rewards');
-            onValue(rewardsRef, (snapshot) => {
-                let count = 0;
-                snapshot.forEach((childSnapshot) => {
-                    const reward = childSnapshot.val();
-                    const rewardDate = new Date(reward.date);
-                    if (rewardDate.getMonth() === currentMonth && rewardDate.getFullYear() === currentYear) {
-                        count++;
-                    }
-                });
-                document.getElementById('rewardsCount').textContent = count;
-            });
+  // إجمالي المخالفات
+  const violationsRef = ref(database, 'violations');
+  onValue(violationsRef, (snapshot) => {
+    document.getElementById('violationsCount').textContent = snapshot.exists()
+      ? snapshot.size
+      : 0;
+  });
 
-            // Violations count
-            const violationsRef = ref(database, 'violations');
-            onValue(violationsRef, (snapshot) => {
-                let count = 0;
-                snapshot.forEach((childSnapshot) => {
-                    const violation = childSnapshot.val();
-                    const violationDate = new Date(violation.date);
-                    if (violationDate.getMonth() === currentMonth && violationDate.getFullYear() === currentYear) {
-                        count++;
-                    }
-                });
-                document.getElementById('violationsCount').textContent = count;
-            });
+  // إجمالي الزمنيات
+  const breakTimesRef = ref(database, 'breakTimes');
+  onValue(breakTimesRef, (snapshot) => {
+    document.getElementById('breakTimesCount').textContent = snapshot.exists()
+      ? snapshot.size
+      : 0;
+  });
+}
 
-            // Break times count (تم تغيير ID ليتوافق مع التصميم)
-            const breakTimesRef = ref(database, 'breakTimes');
-            onValue(breakTimesRef, (snapshot) => {
-                let count = 0;
-                snapshot.forEach((childSnapshot) => {
-                    const breakTime = childSnapshot.val();
-                    const breakDate = new Date(breakTime.date);
-                    if (breakDate.getMonth() === currentMonth && breakDate.getFullYear() === currentYear) {
-                        count++;
-                    }
-                });
-                document.getElementById('breakTimesCount').textContent = count;
-            });
-        }
+// تشغيلها عند تحميل الصفحة
+window.addEventListener('load', () => {
+  getTotalStats();
+});
 
-        // Initialize when page loads
-        window.addEventListener('load', () => {
-            getCurrentMonthStats();
-        });
     </script>
     
     <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
