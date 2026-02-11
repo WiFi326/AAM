@@ -3,105 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول - مدير الموظفين</title>
+    <title>تسجيل الدخول - نظام إدارة الموظفين</title>
     <link rel="stylesheet" href="../css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #49236f;
+            --secondary-color: #2a439f;
+            --accent-color: #00d2ff;
+            --text-dark: #2d3436;
+        }
+
         body {
-            background: linear-gradient(135deg, #49236f 0%, #2a439f 100%);
+            /* خلفية مكتبية احترافية مع تظليل داكن لزيادة وضوح الفورم */
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                        url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0;
-            font-family: 'IBM Plex Sans', sans-serif;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
         }
-        .login-card {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+
+        .login-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             text-align: center;
         }
-        .login-card h2 { color: #49236f; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1.2rem; text-align: right; }
-        .form-group label { display: block; margin-bottom: 5px; color: #666; }
+
+        .login-card h2 { 
+            color: var(--primary-color); 
+            margin-bottom: 0.5rem; 
+            font-weight: 600;
+        }
+
+        .login-card p {
+            color: #636e72;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group { 
+            margin-bottom: 1.5rem; 
+            text-align: right; 
+        }
+
+        .form-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+        }
+
         .form-group input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
             box-sizing: border-box;
             outline: none;
-            transition: border-color 0.3s;
         }
-        .form-group input:focus { border-color: #49236f; }
+
+        .form-group input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 4px rgba(42, 67, 159, 0.1);
+        }
+
+        /* تنسيق زر "تذكرني" */
+        .remember-me-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .remember-me-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .remember-me-wrapper label {
+            font-size: 0.85rem;
+            color: #444;
+            cursor: pointer;
+        }
+
         .login-btn {
             width: 100%;
-            padding: 12px;
-            background: #49236f;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .login-btn:hover { background: #361a52; }
-        .error-msg { color: #e74c3c; font-size: 0.9rem; margin-top: 10px; display: none; }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(73, 35, 111, 0.3);
+        }
+
+        .login-btn:active { transform: translateY(0); }
+
+        #errorMsg {
+            background: #ffeef0;
+            color: #d63031;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.85rem;
+            border: 1px solid #fab1a0;
+        }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <h2>تسجيل الدخول</h2>
-        <form id="loginForm">
-            <div class="form-group">
-                <label>البريد الإلكتروني</label>
-                <input type="email" id="email" placeholder="example@mail.com" required>
-            </div>
-            <div class="form-group">
-                <label>كلمة المرور</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="login-btn" id="loginBtn">دخول</button>
-            <p class="error-msg" id="errorMsg">خطأ في البريد أو كلمة المرور</p>
-        </form>
+    <div class="login-container">
+        <div class="login-card">
+            <h2>مرحباً بك</h2>
+            <p>سجل الدخول لإدارة نظام الموظفين</p>
+
+            <div id="errorMsg"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">البريد الإلكتروني</label>
+                    <input type="email" id="email" placeholder="example@domain.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">كلمة المرور</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+
+                <div class="remember-me-wrapper">
+                    <input type="checkbox" id="rememberMe">
+                    <label for="rememberMe">تذكرني على هذا الجهاز</label>
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">دخول النظام</button>
+            </form>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            setPersistence, 
+            browserLocalPersistence, 
+            browserSessionPersistence 
+        } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
-  authDomain: "gg52-f1a35.firebaseapp.com",
-  databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
-  projectId: "gg52-f1a35",
-  storageBucket: "gg52-f1a35.firebasestorage.app",
-  messagingSenderId: "586005981678",
-  appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
-};
+            authDomain: "gg52-f1a35.firebaseapp.com",
+            databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
+            projectId: "gg52-f1a35",
+            storageBucket: "gg52-f1a35.firebasestorage.app",
+            messagingSenderId: "586005981678",
+            appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
         const loginForm = document.getElementById('loginForm');
         const errorMsg = document.getElementById('errorMsg');
+        const loginBtn = document.getElementById('loginBtn');
+        const rememberMe = document.getElementById('rememberMe');
 
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
+            
+            loginBtn.disabled = true;
+            loginBtn.innerText = "جاري التحقق...";
+            errorMsg.style.display = 'none';
+
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
-            signInWithEmailAndPassword(auth, email, password)
+            // تطبيق خاصية "تذكرني"
+            const persistence = rememberMe.checked ? browserLocalPersistence : browserSessionPersistence;
+
+            setPersistence(auth, persistence)
                 .then(() => {
-                    window.location.href = "dashboard.html"; // التوجه للوحة التحكم
+                    return signInWithEmailAndPassword(auth, email, password);
+                })
+                .then(() => {
+                    window.location.href = "dashboard.html";
                 })
                 .catch((error) => {
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = "دخول النظام";
                     errorMsg.style.display = 'block';
-                    console.error(error.message);
+                    errorMsg.innerText = "تأكد من البريد الإلكتروني أو كلمة المرور";
+                    console.error(error.code);
                 });
         });
     </script>
