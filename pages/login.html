@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - مدير الموظفين</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #49236f 0%, #2a439f 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+        .login-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h2 { color: #49236f; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1.2rem; text-align: right; }
+        .form-group label { display: block; margin-bottom: 5px; color: #666; }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus { border-color: #49236f; }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #49236f;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-btn:hover { background: #361a52; }
+        .error-msg { color: #e74c3c; font-size: 0.9rem; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>تسجيل الدخول</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" id="email" placeholder="example@mail.com" required>
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="login-btn" id="loginBtn">دخول</button>
+            <p class="error-msg" id="errorMsg">خطأ في البريد أو كلمة المرور</p>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+  authDomain: "gg52-f1a35.firebaseapp.com",
+  databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
+  projectId: "gg52-f1a35",
+  storageBucket: "gg52-f1a35.firebasestorage.app",
+  messagingSenderId: "586005981678",
+  appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginForm = document.getElementById('loginForm');
+        const errorMsg = document.getElementById('errorMsg');
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then(() => {
+                    window.location.href = "dashboard.html"; // التوجه للوحة التحكم
+                })
+                .catch((error) => {
+                    errorMsg.style.display = 'block';
+                    console.error(error.message);
+                });
+        });
+    </script>
+</body>
+</html>

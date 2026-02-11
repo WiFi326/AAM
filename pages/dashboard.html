@@ -298,22 +298,35 @@
     </script>
 
     <script type="module">
-        // Firebase configuration (الحفاظ على الكود الأصلي)
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        // Firebase configuration 
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"; 
 
-        const firebaseConfig = {
-             apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+     const firebaseConfig = {
+   apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
   authDomain: "gg52-f1a35.firebaseapp.com",
   databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
   projectId: "gg52-f1a35",
   storageBucket: "gg52-f1a35.firebasestorage.app",
   messagingSenderId: "586005981678",
   appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
-        };
+};
+   const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app); 
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+    } else {
+        //  تشغيل دوال جلب البيانات بعد التأكد من تسجيل الدخول
+        if (typeof loadEmployees === "function") loadEmployees();
+        if (typeof getTotalStats === "function") getTotalStats();
+    }
+});
+
+
 // احصائيات عامة بدون تاريخ
 function getTotalStats() {
 
@@ -358,5 +371,6 @@ window.addEventListener('load', () => {
     </script>
     
     <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+    
 </body>
 </html>

@@ -487,21 +487,45 @@
 
     <script type="module">
         // Firebase configuration
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { getDatabase, ref, onValue, push, set, remove, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
-      const firebaseConfig = {
-   apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
-  authDomain: "gg52-f1a35.firebaseapp.com",
-  databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
-  projectId: "gg52-f1a35",
-  storageBucket: "gg52-f1a35.firebasestorage.app",
-  messagingSenderId: "586005981678",
-  appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+const firebaseConfig = {
+    apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+    authDomain: "gg52-f1a35.firebaseapp.com",
+    databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
+    projectId: "gg52-f1a35",
+    storageBucket: "gg52-f1a35.firebasestorage.app",
+    messagingSenderId: "586005981678",
+    appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
 };
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app); // تعريف القاعدة عالمياً
+
+// جعل المتغيرات متاحة للدوال الأخرى في الصفحة
+window.database = database; 
+
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+    } else {
+        console.log("تم التحقق من المستخدم، جاري تشغيل الدوال...");
+        
+        // تشغيل الدوال الخاصة بالصفحة بعد التأكد من الدخول
+        if (typeof loadEmployees === "function") loadEmployees();
+        if (typeof loadRewards === "function") loadRewards();
+        if (typeof getTotalStats === "function") getTotalStats();
+        
+        // إخفاء شاشة التحميل بعد ثانية من جلب البيانات
+        setTimeout(() => {
+            const loader = document.getElementById('loadingScreen');
+            if(loader) loader.classList.add('hidden');
+        }, 1000);
+    }
+});
 
         // Global variables
         let employees = [];
@@ -777,16 +801,7 @@
             }
         });
 
-        // Hide loading screen after 1 second
-        window.addEventListener('load', () => {
-            loadEmployees();
-            loadRewards();
-            
-            setTimeout(() => {
-                const loadingScreen = document.getElementById('loadingScreen');
-                loadingScreen.classList.add('hidden');
-            }, 1000);
-        });
+        
 
         // Close modals on overlay click
         document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -802,5 +817,6 @@
     <!-- تضمين الشريط السفلي عبر JavaScript -->
 <script src="loadBottomNav.js"></script>
 <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+
 </body>
 </html>
