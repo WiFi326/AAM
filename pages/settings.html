@@ -719,12 +719,6 @@
     </div>
 
 
-    <div class="card" style="margin-top: 20px; border: 1px solid #ff4d4d;">
-    <h3 style="color: #ff4d4d;">منطقة الأمان</h3>
-    <p>سيتم تسجيل خروجك من النظام وتحتاج لإدخال البيانات مرة أخرى للوصول.</p>
-    <button id="logoutBtn" class="btn btn-primary" style="background-color: #ff4d4d; border: none;">تسجيل الخروج</button>
-</div>
-
   
 
 <script type="module">
@@ -767,15 +761,6 @@
             }, 1000);
         }
     });
-
-    // دالة تسجيل الخروج
-    window.logout = function() {
-        if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-            signOut(auth).then(() => {
-                window.location.href = "login.html";
-            });
-        }
-    };
 
 
         // Admin password for deleting all data
