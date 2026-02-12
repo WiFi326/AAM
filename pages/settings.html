@@ -912,18 +912,26 @@
                 document.getElementById('detailPhone').textContent = employee.phone;
                 document.getElementById('detailCreatedAt').textContent = new Date(employee.createdAt).toLocaleDateString('ar-SA');
                 
-                // Set badge for employee type
-                const badge = document.getElementById('detailTypeBadge');
-                badge.textContent = employee.type;
-                badge.className = 'employee-type-badge';
-                
-                if (employee.type === 'Technician') {
-                    badge.classList.add('technician');
-                } else if (employee.type === 'Joker') {
-                    badge.classList.add('joker');
-                } else if (employee.type === 'Supervisor') {
-                    badge.classList.add('supervisor');
-                }
+              // تعريب نوع الموظف وعرضه في الشارة (Badge)
+const badge = document.getElementById('detailTypeBadge');
+const jobTypesAr = {
+    'Technician': 'فني',
+    'Joker': 'جوكر',
+    'Supervisor': 'متابع'
+};
+
+// عرض الاسم بالعربي، وإذا لم يوجد يعرض النص الأصلي
+badge.textContent = jobTypesAr[employee.type] || employee.type;
+badge.className = 'employee-type-badge';
+
+// إضافة التنسيق اللوني بناءً على النوع الأصلي
+if (employee.type === 'Technician') {
+    badge.classList.add('technician');
+} else if (employee.type === 'Joker') {
+    badge.classList.add('joker');
+} else if (employee.type === 'Supervisor') {
+    badge.classList.add('supervisor');
+}
                 
                 openModal('employeeDetailsModal');
             }
