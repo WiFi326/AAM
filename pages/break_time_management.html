@@ -736,33 +736,49 @@ onAuthStateChanged(auth, (user) => {
             }
         });
 
-        // Load employees
-        function loadEmployees() {
-            const employeesRef = ref(database, 'employees');
-            onValue(employeesRef, (snapshot) => {
-                employees = [];
-                const employeeSelect = document.getElementById('employeeSelect');
-                const editEmployeeSelect = document.getElementById('editEmployeeSelect');
-                const searchEmployee = document.getElementById('searchEmployee');
-                
-                employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
-                editEmployeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
-                searchEmployee.innerHTML = '<option value="">جميع الموظفين</option>';
-                
-                snapshot.forEach((childSnapshot) => {
-                    const employee = {
-                        id: childSnapshot.key,
-                        ...childSnapshot.val()
-                    };
-                    employees.push(employee);
-                    
-                    const option = `<option value="${employee.id}">${employee.name} - ${getJobTypeArabic(employee.type)}</option>`;
-                    employeeSelect.innerHTML += option;
-                    editEmployeeSelect.innerHTML += option;
-                    searchEmployee.innerHTML += option;
-                });
-            });
-        }
+       // Load employees from Firebase
+function loadEmployees() {
+
+    const employeesRef = ref(database, 'employees');
+
+    onValue(employeesRef, (snapshot) => {
+
+        employees = [];
+
+        employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+        document.getElementById('editEmployeeSelect').innerHTML = '<option value="">اختر الموظف</option>';
+
+        // نخزنهم أولاً
+        snapshot.forEach((childSnapshot) => {
+
+            const employee = {
+                id: childSnapshot.key,
+                ...childSnapshot.val()
+            };
+
+            employees.push(employee);
+
+        });
+
+        // 🔥 ترتيب أبجدي عربي
+        employees.sort((a, b) =>
+            a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' })
+        );
+
+        // بعدها نعرضهم
+        employees.forEach((employee) => {
+
+            const option = `<option value="${employee.id}">${employee.name}</option>`;
+
+            employeeSelect.innerHTML += option;
+            document.getElementById('editEmployeeSelect').innerHTML += option;
+
+        });
+
+    });
+
+}
+
 
         // Load breaks
         function loadBreaks() {

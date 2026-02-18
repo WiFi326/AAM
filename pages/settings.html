@@ -839,39 +839,44 @@
                 const tableBody = document.getElementById('employeesTableBody');
                 const noEmployeesMessage = document.getElementById('noEmployeesMessage');
                 tableBody.innerHTML = '';
+
+                 snapshot.forEach((childSnapshot) => {
+        const employee = childSnapshot.val();
+        employee.id = childSnapshot.key;
+        employees.push(employee);
+    });
+
+    // 🔥 ترتيب أبجدي عربي
+    employees.sort((a, b) => 
+        a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' })
+    );
                 
                 let count = 0;
-                snapshot.forEach((childSnapshot) => {
-                    count++;
-                    const employee = childSnapshot.val();
-                    employee.id = childSnapshot.key;
-                    employees.push(employee);
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="employee-number">${count}</td>
-                        <td class="employee-name">${employee.name}</td>
-                        <td>
-                            <button onclick="viewEmployeeDetails('${employee.id}')" class="details-btn">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                تفاصيل
-                            </button>
-                        </td>
-                    `;
-                    
-                    tableBody.appendChild(row);
-                });
-                
-                if (count === 0) {
-                    noEmployeesMessage.style.display = 'block';
-                    tableBody.style.display = 'none';
-                } else {
-                    noEmployeesMessage.style.display = 'none';
-                    tableBody.style.display = 'table-row-group';
-                }
+
+    employees.forEach((employee) => {
+        count++;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="employee-number">${count}</td>
+            <td class="employee-name">${employee.name}</td>
+            <td>
+                <button onclick="viewEmployeeDetails('${employee.id}')" class="details-btn">
+                    تفاصيل
+                </button>
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+
+    if (count === 0) {
+        noEmployeesMessage.style.display = 'block';
+        tableBody.style.display = 'none';
+    } else {
+        noEmployeesMessage.style.display = 'none';
+        tableBody.style.display = 'table-row-group';
+    }
             });
         }
 
