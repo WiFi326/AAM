@@ -826,7 +826,8 @@ onAuthStateChanged(auth, (user) => {
         const labels = {
             'leave': 'إجازة',
             'reward': 'مكافأة',
-            'violation': 'مخالفة'
+            'violation': 'مخالفة',
+            'break': 'زمنية'
         };
         return labels[type] || type;
     }
@@ -989,6 +990,32 @@ onAuthStateChanged(auth, (user) => {
             console.error('خطأ في تحميل المخالفات:', error);
             loadedCount++;
         });
+
+         // Load break times (الزمنيات)
+    const breaksRef = ref(database, 'breakTimes');
+    onValue(breaksRef, (snapshot) => {
+        console.log('تحميل الزمنيات.');
+        snapshot.forEach((childSnapshot) => {
+            const bt = childSnapshot.val();
+            allStatistics.push({
+                id: childSnapshot.key,
+                type: 'break', // نوع جديد
+                employeeName: getEmployeeName(bt.employeeId),
+                date: bt.date, // تاريخ الزمنية
+                // نقدر نستخدم هذي بس للعرض في الجدول (مو مهم للأكسل)
+                details: `${bt.startTime} - ${bt.duration} دقيقة`,
+                notes: bt.notes || ''
+            });
+        });
+        loadedCount++;
+        if (loadedCount === totalTypes) {
+            console.log('تم تحميل جميع البيانات');
+            updateDisplay();
+        }
+    }, (error) => {
+        console.error('خطأ في تحميل الزمنيات:', error);
+        loadedCount++;
+    });
     }
 
     // Update display with current data
@@ -1175,7 +1202,63 @@ onAuthStateChanged(auth, (user) => {
             });
         }
 
-        // ====== Export to Excel (.xlsx) 
+        function formatDuration(minutes) {
+    minutes = parseInt(minutes);
+    if (isNaN(minutes) || minutes <= 0) return "";
+
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    let parts = [];
+
+    // الساعات
+    if (hours > 0) {
+        if (hours === 1) parts.push("ساعة");
+        else if (hours === 2) parts.push("ساعتين");
+        else parts.push(`${hours} ساعات`);
+    }
+
+    // الدقائق
+    if (mins > 0) {
+        if (mins === 15) parts.push("ربع");
+        else if (mins === 30) parts.push("نصف");
+        else parts.push(`${mins} دقيقة`);
+    }
+
+    // صيغة خاصة للساعات + نصف
+    if (hours >= 1 && mins === 30) {
+        return `${hours === 1 ? "ساعة" : hours === 2 ? "ساعتين" : hours + " ساعات"} ونصف`;
+    }
+
+    // صيغة خاصة للساعة + ربع
+    if (hours >= 1 && mins === 15) {
+        return `${hours === 1 ? "ساعة" : hours === 2 ? "ساعتين" : hours + " ساعات"} وربع`;
+    }
+
+    // إذا بس دقائق
+    if (hours === 0) return parts.join(" ");
+
+    // الساعات لوحدها
+    return parts.join(" و ");
+}
+
+function formatTime12(timeStr) {
+    if (!timeStr) return '';
+
+    // نتوقع صيغة مثل "13:30" أو "09:05"
+    const [hStr, mStr = '00'] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    if (isNaN(h)) return timeStr;
+
+    const suffix = h >= 12 ? 'م' : 'ص'; // م = مساءً ، ص = صباحاً
+    h = h % 12;
+    if (h === 0) h = 12;
+
+    const minutes = String(parseInt(mStr, 10) || 0).padStart(2, '0');
+    return `${h}:${minutes} ${suffix}`;
+}
+
+      // ====== Export to Excel (.xlsx) مع الزمنيات ======
 const exportBtn = document.getElementById('exportBtn');
 if (exportBtn) {
     exportBtn.addEventListener('click', () => {
@@ -1184,6 +1267,7 @@ if (exportBtn) {
             return;
         }
 
+        // تنسيق التاريخ أرقام فقط
         const formatDateNumeric = (dateString) => {
             if (!dateString) return '';
             const d = new Date(dateString);
@@ -1195,32 +1279,44 @@ if (exportBtn) {
             return `${y}-${m}-${day}`;
         };
 
-        const typeOrder = { leave: 1, reward: 2, violation: 3 };
+        // تنظيف الملاحظات: إذا ماكو ملاحظة تبقى الخلية فاضية
+        const normalizeNote = (note) => {
+            if (!note) return '';
+            const trimmed = String(note).trim();
+            if (trimmed === '-' || trimmed === 'لا يوجد سبب') return '';
+            return trimmed;
+        };
+
+        // ترتيب الأنواع داخل كل موظف
+        // إجازات (1) → زمنيات (2) → مكافآت (3) → مخالفات (4)
+        const typeOrder = { leave: 1, break: 2, reward: 3, violation: 4 };
 
         const sortedData = [...allStatistics].sort((a, b) => {
             const nameA = (a.employeeName || 'غير معروف').toString();
             const nameB = (b.employeeName || 'غير معروف').toString();
 
+            // أول شي نرتب بالأبجدية
             const byName = nameA.localeCompare(nameB, 'ar');
             if (byName !== 0) return byName;
 
+            // بعدين حسب نوع السجل
             const ta = typeOrder[a.type] || 99;
             const tb = typeOrder[b.type] || 99;
             if (ta !== tb) return ta - tb;
 
+            // وآخر شي حسب التاريخ
             return new Date(a.date || 0) - new Date(b.date || 0);
         });
 
         const counters = {};
         const rows = [];
-
         let lastEmp = null;
 
-        sortedData.forEach((stat, index) => {
+        sortedData.forEach((stat) => {
             const empName = stat.employeeName || 'غير معروف';
             const isNewEmp = empName !== lastEmp;
 
-            // إذا تغير الموظف نضيف سطر فارغ (ماعدا أول واحد)
+            // إذا بدينا موظف جديد (ومو أول واحد) أضف سطر فاصل
             if (isNewEmp && lastEmp !== null) {
                 rows.push({
                     "اسم الموظف": "",
@@ -1232,24 +1328,67 @@ if (exportBtn) {
             }
 
             if (!counters[empName]) {
-                counters[empName] = { leave: 0, reward: 0, violation: 0 };
+                counters[empName] = { leave: 0, break: 0, reward: 0, violation: 0 };
             }
 
+            // نزيد العدادات حسب النوع
             if (stat.type === 'leave') counters[empName].leave++;
+            if (stat.type === 'break') counters[empName].break++;
             if (stat.type === 'reward') counters[empName].reward++;
             if (stat.type === 'violation') counters[empName].violation++;
 
+            // النوع المرقّم
             let numberedType = getTypeLabel(stat.type);
-            if (stat.type === 'leave') numberedType = `إجازة ${counters[empName].leave}`;
-            if (stat.type === 'reward') numberedType = `مكافأة ${counters[empName].reward}`;
+            if (stat.type === 'leave')    numberedType = `إجازة ${counters[empName].leave}`;
+            if (stat.type === 'break')    numberedType = `زمنية ${counters[empName].break}`;
+            if (stat.type === 'reward')   numberedType = `مكافأة ${counters[empName].reward}`;
             if (stat.type === 'violation') numberedType = `مخالفة ${counters[empName].violation}`;
+
+           // تفاصيل الزمنية: الوقت + المدة بنفس الخلية
+// تفاصيل الزمنية: الوقت + المدة بنفس الخلية
+let detailsCell = stat.details || '';
+
+if (stat.type === 'break') {
+    const originalDetails = stat.details || '';
+
+    // 1) استخرج الدقائق من النص مثل: "60 دقيقة"
+    let minutes = 0;
+    const minutesMatch = originalDetails.match(/(\d+)\s*دقيقة/);
+    if (minutesMatch) {
+        minutes = parseInt(minutesMatch[1], 10);
+    }
+
+    // 2) استخرج الأوقات بصيغة HH:MM مثل: "13:00" أو "09:30"
+    const timeMatches = originalDetails.match(/(\d{1,2}:\d{2})/g) || [];
+    const start24 = timeMatches[0] || '';
+    const end24   = timeMatches[1] || '';
+
+    const start12 = start24 ? formatTime12(start24) : '';
+    const end12   = end24   ? formatTime12(end24)   : '';
+    const durationText = minutes ? formatDuration(minutes) : '';
+
+    // 3) نبني النص النهائي حسب المتوفر من بيانات
+    if (start12 && end12 && durationText) {
+        // مثال: 8:00 ص - 9:00 ص (ساعة)
+        detailsCell = `${start12} - ${end12} (${durationText})`;
+    } else if (start12 && durationText) {
+        // مثال: 8:00 ص (ساعة وربع)
+        detailsCell = `${start12} (${durationText})`;
+    } else if (durationText) {
+        // مثال: ساعة ونصف
+        detailsCell = durationText;
+    } else {
+        // إذا ما قدرنا نستخرج شي، نخلي النص القديم مثل ما هو
+        detailsCell = originalDetails;
+    }
+}
 
             rows.push({
                 "اسم الموظف": isNewEmp ? empName : "",
                 "النوع": numberedType,
                 "التاريخ": formatDateNumeric(stat.date),
-                "التفاصيل": stat.details || '-',
-                "الملاحظات": stat.notes || '-'
+                "التفاصيل": detailsCell,
+                "الملاحظات": normalizeNote(stat.notes)
             });
 
             lastEmp = empName;
@@ -1260,12 +1399,13 @@ if (exportBtn) {
                 header: ["اسم الموظف", "النوع", "التاريخ", "التفاصيل", "الملاحظات"]
             });
 
+            // عرض الأعمدة
             ws['!cols'] = [
-                { wch: 22 },
-                { wch: 16 },
-                { wch: 14 },
-                { wch: 18 },
-                { wch: 30 }
+                { wch: 22 }, // اسم الموظف
+                { wch: 16 }, // النوع
+                { wch: 14 }, // التاريخ
+                { wch: 26 }, // مدة الزمنية + الوقت أو تفاصيل أخرى
+                { wch: 30 }  // الملاحظات
             ];
 
             const wb = XLSX.utils.book_new();
