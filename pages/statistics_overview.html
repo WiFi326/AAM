@@ -1313,108 +1313,243 @@ if (exportBtn) {
         let lastEmp = null;
 
         sortedData.forEach((stat) => {
-            const empName = stat.employeeName || 'غير معروف';
-            const isNewEmp = empName !== lastEmp;
+    const empName = stat.employeeName || 'غير معروف';
+    const isNewEmp = empName !== lastEmp;
 
-            // إذا بدينا موظف جديد (ومو أول واحد) أضف سطر فاصل
-            if (isNewEmp && lastEmp !== null) {
-                rows.push({
-                    "اسم الموظف": "",
-                    "النوع": "",
-                    "التاريخ": "",
-                    "التفاصيل": "",
-                    "الملاحظات": ""
+    // إذا بدينا موظف جديد
+    if (isNewEmp) {
+        // سطر فاصل بين الموظفين (مو أول موظف)
+        if (lastEmp !== null) {
+            rows.push({
+                "اسم الموظف": "",
+                "النوع": "",
+                "التاريخ": "",
+                "التفاصيل": "",
+                "الملاحظات": ""
+            });
+        }
+
+        // سطر خاص باسم الموظف فقط (مرة وحدة لكل موظف)
+        rows.push({
+            "اسم الموظف": empName,
+            "النوع": "",
+            "التاريخ": "",
+            "التفاصيل": "",
+            "الملاحظات": ""
+        });
+    }
+
+    if (!counters[empName]) {
+        counters[empName] = { leave: 0, break: 0, reward: 0, violation: 0 };
+    }
+
+    // نزيد العدادات حسب النوع
+    if (stat.type === 'leave') counters[empName].leave++;
+    if (stat.type === 'break') counters[empName].break++;
+    if (stat.type === 'reward') counters[empName].reward++;
+    if (stat.type === 'violation') counters[empName].violation++;
+
+    // النوع المرقّم
+    let numberedType = getTypeLabel(stat.type);
+    if (stat.type === 'leave')    numberedType = `إجازة ${counters[empName].leave}`;
+    if (stat.type === 'break')    numberedType = `زمنية ${counters[empName].break}`;
+    if (stat.type === 'reward')   numberedType = `مكافأة ${counters[empName].reward}`;
+    if (stat.type === 'violation') numberedType = `مخالفة ${counters[empName].violation}`;
+
+    // تفاصيل الزمنية: الوقت + المدة بنفس الخلية
+    let detailsCell = stat.details || '';
+
+    if (stat.type === 'break') {
+        const originalDetails = stat.details || '';
+
+        let minutes = 0;
+        const minutesMatch = originalDetails.match(/(\d+)\s*دقيقة/);
+        if (minutesMatch) {
+            minutes = parseInt(minutesMatch[1], 10);
+        }
+
+        const timeMatches = originalDetails.match(/(\d{1,2}:\d{2})/g) || [];
+        const start24 = timeMatches[0] || '';
+        const end24   = timeMatches[1] || '';
+
+        const start12 = start24 ? formatTime12(start24) : '';
+        const end12   = end24   ? formatTime12(end24)   : '';
+        const durationText = minutes ? formatDuration(minutes) : '';
+
+        if (start12 && end12 && durationText) {
+            detailsCell = `${start12} - ${end12} (${durationText})`;
+        } else if (start12 && durationText) {
+            detailsCell = `${start12} (${durationText})`;
+        } else if (durationText) {
+            detailsCell = durationText;
+        } else {
+            detailsCell = originalDetails;
+        }
+    }
+
+    rows.push({
+        "اسم الموظف": "",
+        "النوع": numberedType,
+        "التاريخ": formatDateNumeric(stat.date),
+        "التفاصيل": detailsCell,
+        "الملاحظات": normalizeNote(stat.notes)
+    });
+
+    lastEmp = empName;
+});
+
+                     try {
+            // إنشاء ملف إكسل جديد
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('الإحصائيات');
+
+            // الهيدر
+            const header = ["اسم الموظف", "النوع", "التاريخ", "التفاصيل", "الملاحظات"];
+            const headerRow = sheet.addRow(header);
+
+            // تنسيق الهيدر: خلفية سوداء وكتابة بيضه
+            headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            headerRow.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF000000' } // أسود
+            };
+            headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // عرض الأعمدة
+            sheet.columns = [
+                { header: "اسم الموظف", key: "employeeName", width: 22 },
+                { header: "النوع",       key: "type",         width: 16 },
+                { header: "التاريخ",     key: "date",         width: 14 },
+                { header: "التفاصيل",    key: "details",      width: 26 },
+                { header: "الملاحظات",   key: "notes",        width: 30 }
+            ];
+
+            // دالة مساعدة: تلوين أعمدة النوع/التاريخ/التفاصيل/الملاحظات فقط
+            function colorDataRowExceptName(row, argb) {
+                row.eachCell((cell, colNumber) => {
+                    if (colNumber === 1) return; // عمود "اسم الموظف" يبقى بدون لون
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb }
+                    };
                 });
             }
 
-            if (!counters[empName]) {
-                counters[empName] = { leave: 0, break: 0, reward: 0, violation: 0 };
-            }
+            // تعبئة البيانات من rows + الألوان
+            rows.forEach((r) => {
+                const row = sheet.addRow([
+                    r["اسم الموظف"] || "",
+                    r["النوع"] || "",
+                    r["التاريخ"] || "",
+                    r["التفاصيل"] || "",
+                    r["الملاحظات"] || ""
+                ]);
 
-            // نزيد العدادات حسب النوع
-            if (stat.type === 'leave') counters[empName].leave++;
-            if (stat.type === 'break') counters[empName].break++;
-            if (stat.type === 'reward') counters[empName].reward++;
-            if (stat.type === 'violation') counters[empName].violation++;
+                const nameCellValue = r["اسم الموظف"] || "";
+                const typeText = r["النوع"] || "";
+                const dateVal = r["التاريخ"] || "";
+                const detailsVal = r["التفاصيل"] || "";
+                const notesVal = r["الملاحظات"] || "";
 
-            // النوع المرقّم
-            let numberedType = getTypeLabel(stat.type);
-            if (stat.type === 'leave')    numberedType = `إجازة ${counters[empName].leave}`;
-            if (stat.type === 'break')    numberedType = `زمنية ${counters[empName].break}`;
-            if (stat.type === 'reward')   numberedType = `مكافأة ${counters[empName].reward}`;
-            if (stat.type === 'violation') numberedType = `مخالفة ${counters[empName].violation}`;
+                const isSeparatorRow =
+                    !nameCellValue && !typeText && !dateVal && !detailsVal && !notesVal;
 
-           // تفاصيل الزمنية: الوقت + المدة بنفس الخلية
-// تفاصيل الزمنية: الوقت + المدة بنفس الخلية
-let detailsCell = stat.details || '';
+                const isNameOnlyRow =
+                    !!nameCellValue && !typeText && !dateVal && !detailsVal && !notesVal;
 
-if (stat.type === 'break') {
-    const originalDetails = stat.details || '';
+                if (isSeparatorRow) {
+                    // السطر الفاصل بين موظف وآخر → رصاصي شبه غامق (كل الأعمدة)
+                    row.eachCell((cell) => {
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FF808080' } // رمادي شبه غامق
+                        };
+                    });
+                } else if (isNameOnlyRow) {
+                    // سطر اسم الموظف → بدون لون نهائياً (كل الأعمدة تبقى بيضاء)
+                    // ما نضيف أي fill هنا
+                } else {
+                    // سطور البيانات اللي بيها نوع
+                    const hasType = (typeText && typeText.trim().length > 0);
 
-    // 1) استخرج الدقائق من النص مثل: "60 دقيقة"
-    let minutes = 0;
-    const minutesMatch = originalDetails.match(/(\d+)\s*دقيقة/);
-    if (minutesMatch) {
-        minutes = parseInt(minutesMatch[1], 10);
-    }
+                    if (hasType) {
+                        // إجازة: أول اثنين بدون لون، من الثالثة وفوق أصفر فاتح
+                        if (typeText.startsWith("إجازة")) {
+                            const match = typeText.match(/إجازة\s+(\d+)/);
+                            const num = match ? parseInt(match[1], 10) : NaN;
 
-    // 2) استخرج الأوقات بصيغة HH:MM مثل: "13:00" أو "09:30"
-    const timeMatches = originalDetails.match(/(\d{1,2}:\d{2})/g) || [];
-    const start24 = timeMatches[0] || '';
-    const end24   = timeMatches[1] || '';
+                            if (!isNaN(num) && num >= 3) {
+                                // نخلي اللون بس للأعمدة من الثاني للخامس
+                                colorDataRowExceptName(row, 'FFFFFF99'); // أصفر فاتح
+                            }
+                            // إجازة 1 و 2 → بدون لون نهائياً (حتى الأعمدة الأخرى تبقى بيضاء)
+                        }
+                        // مكافأة → أخضر فاتح
+                        else if (typeText.startsWith("مكافأة")) {
+                            colorDataRowExceptName(row, 'FF99E699');
+                        }
+                        // مخالفة → أحمر فاتح
+                        else if (typeText.startsWith("مخالفة")) {
+                            colorDataRowExceptName(row, 'FFFF9999');
+                        }
+                        // زمنية → أزرق سماوي فاتح
+                        else if (typeText.startsWith("زمنية")) {
+                            colorDataRowExceptName(row, 'FF99D6FF');
+                        }
+                        // إذا نوع آخر، نخليه بدون لون
+                    }
+                }
 
-    const start12 = start24 ? formatTime12(start24) : '';
-    const end12   = end24   ? formatTime12(end24)   : '';
-    const durationText = minutes ? formatDuration(minutes) : '';
-
-    // 3) نبني النص النهائي حسب المتوفر من بيانات
-    if (start12 && end12 && durationText) {
-        // مثال: 8:00 ص - 9:00 ص (ساعة)
-        detailsCell = `${start12} - ${end12} (${durationText})`;
-    } else if (start12 && durationText) {
-        // مثال: 8:00 ص (ساعة وربع)
-        detailsCell = `${start12} (${durationText})`;
-    } else if (durationText) {
-        // مثال: ساعة ونصف
-        detailsCell = durationText;
-    } else {
-        // إذا ما قدرنا نستخرج شي، نخلي النص القديم مثل ما هو
-        detailsCell = originalDetails;
-    }
-}
-
-            rows.push({
-                "اسم الموظف": isNewEmp ? empName : "",
-                "النوع": numberedType,
-                "التاريخ": formatDateNumeric(stat.date),
-                "التفاصيل": detailsCell,
-                "الملاحظات": normalizeNote(stat.notes)
+                // حدود + محاذاة لكل الصفوف (هيدر + بيانات + فواصل)
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top:    { style: 'thin' },
+                        left:   { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right:  { style: 'thin' }
+                    };
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                });
             });
 
-            lastEmp = empName;
-        });
-
-        try {
-            const ws = XLSX.utils.json_to_sheet(rows, {
-                header: ["اسم الموظف", "النوع", "التاريخ", "التفاصيل", "الملاحظات"]
+            // حدود للهيدر أيضاً
+            headerRow.eachCell((cell) => {
+                cell.border = {
+                    top:    { style: 'thin' },
+                    left:   { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right:  { style: 'thin' }
+                };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
             });
-
-            // عرض الأعمدة
-            ws['!cols'] = [
-                { wch: 22 }, // اسم الموظف
-                { wch: 16 }, // النوع
-                { wch: 14 }, // التاريخ
-                { wch: 26 }, // مدة الزمنية + الوقت أو تفاصيل أخرى
-                { wch: 30 }  // الملاحظات
-            ];
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "الإحصائيات");
 
             const today = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(wb, `إحصائيات_الموظفين_${today}.xlsx`);
 
-            showNotification('تم تصدير ملف Excel بنجاح', 'success');
+            // حفظ الملف وتنزيله
+            workbook.xlsx.writeBuffer()
+                .then((buffer) => {
+                    const blob = new Blob(
+                        [buffer],
+                        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+                    );
+
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `إحصائيات_الموظفين_${today}.xlsx`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    showNotification('تم تصدير ملف Excel بنجاح', 'success');
+                })
+                .catch((error) => {
+                    console.error(error);
+                    showNotification('فشل تصدير ملف Excel', 'error');
+                });
+
         } catch (error) {
             console.error(error);
             showNotification('فشل تصدير ملف Excel', 'error');
@@ -1427,7 +1562,7 @@ if (stat.type === 'break') {
 </script>
 <!-- تضمين الشريط السفلي عبر JavaScript -->
 <script src="loadBottomNav.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
     
     <!-- <script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script> -->
