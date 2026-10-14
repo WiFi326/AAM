@@ -359,17 +359,21 @@
                 </h2>
                 
                 <form id="breakForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+
                     <!-- Employee Selection -->
-   
+<!-- اختيار الموظف مع العين السحرية -->
 <div>
     <label for="employeeSelect" class="label">اسم الموظف <span class="text-error">*</span></label>
-    <div class="flex items-center gap-2">
-        <!-- حقل الاختيار -->
+    
+    <!-- حاوية الأب (تجمع السلكت وزر العين فقط) -->
+    <div class="relative flex items-center gap-2">
+        <!-- حقل الموظف (يأخذ المساحة المتاحة) -->
         <select id="employeeSelect" class="select flex-1" required>
             <option value="">اختر الموظف</option>
         </select>
 
-        <!-- زر العين: بصف الحقل، باهت مصغر بدون حدود، ومخفي افتراضياً -->
+        <!-- زر العين السحرية (بجانب الحقل) -->
         <button type="button" id="checkEmployeeHoursBtn" class="text-gray-400 hover:text-primary transition-colors p-1.5 rounded-full opacity-60 hover:opacity-100 hidden" title="عرض الساعات المتبقية">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -378,9 +382,11 @@
         </button>
     </div>
 
-    <!-- الحقل الذي يظهر تحته النتيجة بخط واضح وحجم طبيعي -->
-    <div id="employeeHoursCard" class="hidden mt-2 p-3 rounded-lg font-medium transition-all flex items-center justify-between border">
-        <span id="employeeHoursText"></span>
+    <!-- حقل النتيجة: وضعناه بالخارج تماماً تحت السلكت لوحده حتى لا يتأثر بزر العين ويطلع مرتب -->
+    <div class="flex">
+        <div id="employeeHoursCard" class="hidden mt-2 p-3 rounded-lg font-medium transition-all flex items-center justify-between border w-full">
+            <span id="employeeHoursText"></span>
+        </div>
     </div>
 </div>
 
@@ -697,7 +703,7 @@ onAuthStateChanged(auth, (user) => {
             return `${hours} ساعة و ${remainingMins} دقيقة`;
         }
 
-        
+
 const MAX_BREAK_MINUTES = 300; // 5 ساعات
 
 const employeeSelect = document.getElementById('employeeSelect');
@@ -743,7 +749,7 @@ eyeBtn.addEventListener('click', () => {
     } else {
         const remainingMinutes = MAX_BREAK_MINUTES - totalMinutes;
         hoursCard.className = "mt-2 p-3 rounded-lg text-sm md:text-base font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between";
-        hoursText.innerHTML = `⏱️ الساعات المتبقية للموظف: <span class="font-bold underline ml-1">${formatDuration(remainingMinutes)}</span> (من أصل 5 ساعات)`;
+        hoursText.innerHTML = `⏱️ الساعات المتبقية: <span class="font-bold underline ml-1">${formatDuration(remainingMinutes)}</span> (من أصل 5س)`;
     }
 
     // إظهار بطاقة النتيجة
