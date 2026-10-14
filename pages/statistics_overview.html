@@ -677,6 +677,17 @@
                     <!-- Table rows will be dynamically inserted here -->
                 </tbody>
             </table>
+
+            <!-- أزرار التنقل بين الصفحات لجدول الإحصائيات -->
+            <div id="statisticsPaginationControls" class="flex items-center justify-between p-4 border-t border-gray-200" style="display: none;">
+                <button type="button" id="prevStatPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                    السابق
+                </button>
+                <div id="statPageNumbers" class="text-sm font-semibold text-gray-700"></div>
+                <button type="button" id="nextStatPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                    التالي
+                </button>
+            </div>
             
             <!-- Empty State -->
             <div class="empty-state" id="emptyState" style="display: none;">
@@ -1018,6 +1029,10 @@ onAuthStateChanged(auth, (user) => {
     });
     }
 
+    // متغيرات نظام الصفحات لقسم الإحصائيات
+    let currentStatPage = 1;
+    const statsPerPage = 10;
+
     // Update display with current data
     function updateDisplay() {
         console.log('تحديث العرض، عدد السجلات:', allStatistics.length);
@@ -1055,22 +1070,36 @@ onAuthStateChanged(auth, (user) => {
         updateRecordCount();
     }
 
-    // Render desktop table
+    // Render desktop table with Pagination
     function renderTable() {
         const tableBody = document.getElementById('tableBody');
         const emptyState = document.getElementById('emptyState');
+        const paginationControls = document.getElementById('statisticsPaginationControls');
         
         if (!tableBody || !emptyState) return;
         
-        if (filteredStatistics.length === 0) {
+        const totalItems = filteredStatistics.length;
+        if (totalItems === 0) {
             tableBody.innerHTML = '';
             emptyState.style.display = 'block';
+            if (paginationControls) paginationControls.style.display = 'none';
             return;
         }
         
         emptyState.style.display = 'none';
+
+        const totalPages = Math.ceil(totalItems / statsPerPage);
         
-        tableBody.innerHTML = filteredStatistics.map(stat => `
+        // ضبط الحدود للصفحة الحالية
+        if (currentStatPage < 1) currentStatPage = 1;
+        if (currentStatPage > totalPages) currentStatPage = totalPages;
+
+        // استخراج عناصر الصفحة الحالية فقط
+        const startIndex = (currentStatPage - 1) * statsPerPage;
+        const endIndex = Math.min(startIndex + statsPerPage, totalItems);
+        const paginatedStats = filteredStatistics.slice(startIndex, endIndex);
+        
+        tableBody.innerHTML = paginatedStats.map(stat => `
             <tr class="${getRowClass(stat.type)}">
                 <td>${stat.employeeName || 'غير معروف'}</td>
                 <td>
@@ -1083,20 +1112,33 @@ onAuthStateChanged(auth, (user) => {
                 <td>${stat.notes || '-'}</td>
             </tr>
         `).join('');
+
+        // إظهار أزرار التنقل وتحديثها إذا كانت الصفحات أكثر من 1
+        if (totalPages > 1) {
+            paginationControls.style.display = 'flex';
+            renderStatPaginationButtons(totalPages);
+        } else {
+            paginationControls.style.display = 'none';
+        }
     }
 
-    // Render mobile cards
+    // Render mobile cards (تحديث كروت الموبايل أيضاً لتتبع نظام الصفحات مع الجدول)
     function renderMobileCards() {
         const mobileCards = document.getElementById('mobileCards');
         
         if (!mobileCards) return;
         
-        if (filteredStatistics.length === 0) {
+        const totalItems = filteredStatistics.length;
+        if (totalItems === 0) {
             mobileCards.innerHTML = '';
             return;
         }
+
+        const startIndex = (currentStatPage - 1) * statsPerPage;
+        const endIndex = Math.min(startIndex + statsPerPage, totalItems);
+        const paginatedStats = filteredStatistics.slice(startIndex, endIndex);
         
-        mobileCards.innerHTML = filteredStatistics.map(stat => `
+        mobileCards.innerHTML = paginatedStats.map(stat => `
             <div class="stat-card-mobile ${getRowClass(stat.type)}">
                 <div class="card-header-mobile">
                     <h3 style="font-size: 1.125rem; font-weight: 700; color: #111827;">${stat.employeeName || 'غير معروف'}</h3>
@@ -1120,6 +1162,39 @@ onAuthStateChanged(auth, (user) => {
                 </div>
             </div>
         `).join('');
+    }
+
+    // دالة إنشاء أزرار التنقل الخاصة بالإحصائيات
+    function renderStatPaginationButtons(totalPages) {
+        const prevBtn = document.getElementById('prevStatPageBtn');
+        const nextBtn = document.getElementById('nextStatPageBtn');
+        const pageNumbers = document.getElementById('statPageNumbers');
+
+        if (!prevBtn || !nextBtn || !pageNumbers) return;
+
+        prevBtn.disabled = currentStatPage === 1;
+        nextBtn.disabled = currentStatPage === totalPages;
+
+        prevBtn.style.opacity = currentStatPage === 1 ? '0.5' : '1';
+        nextBtn.style.opacity = currentStatPage === totalPages ? '0.5' : '1';
+
+        pageNumbers.innerHTML = `صفحة ${currentStatPage} من ${totalPages}`;
+
+        prevBtn.onclick = () => {
+            if (currentStatPage > 1) {
+                currentStatPage--;
+                renderTable();
+                renderMobileCards();
+            }
+        };
+
+        nextBtn.onclick = () => {
+            if (currentStatPage < totalPages) {
+                currentStatPage++;
+                renderTable();
+                renderMobileCards();
+            }
+        };
     }
 
     // Update record count
@@ -1160,6 +1235,7 @@ onAuthStateChanged(auth, (user) => {
                     );
                 }
                 
+                currentStatPage = 1; // العودة للصفحة الأولى عند البحث
                 renderTable();
                 renderMobileCards();
                 updateRecordCount();

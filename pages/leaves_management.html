@@ -472,6 +472,17 @@
                     </table>
                 </div>
 
+                <!-- أزرار التنقل بين الصفحات لسجل الإجازات -->
+                <div id="leavesPaginationControls" class="flex items-center justify-between pt-4 mt-4 border-t border-gray-200" style="display: none;">
+                    <button type="button" id="prevLeavePageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                        السابق
+                    </button>
+                    <div id="leavePageNumbers" class="text-sm font-semibold text-text-secondary"></div>
+                    <button type="button" id="nextLeavePageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                        التالي
+                    </button>
+                </div>
+
                 <!-- Mobile Cards View -->
                 <div class="mobile-cards" id="mobileCardsContainer">
                     <!-- Mobile cards will be inserted here -->
@@ -726,26 +737,44 @@ function loadEmployees() {
             });
         }
 
-        // Render leaves table
+        // متغيرات نظام الصفحات للإجازات
+        let currentLeavePage = 1;
+        const leavesPerPage = 10;
+
+        // Render leaves table with Pagination
         function renderLeaves() {
             const tableBody = document.getElementById('leavesTableBody');
             const mobileContainer = document.getElementById('mobileCardsContainer');
             const emptyState = document.getElementById('emptyState');
             const recordCount = document.getElementById('recordCount');
+            const paginationControls = document.getElementById('leavesPaginationControls');
             
             tableBody.innerHTML = '';
             mobileContainer.innerHTML = '';
             
-            if (filteredLeaves.length === 0) {
+            const totalItems = filteredLeaves.length;
+            if (totalItems === 0) {
                 emptyState.classList.remove('hidden');
                 recordCount.textContent = '0 سجل';
+                if(paginationControls) paginationControls.style.display = 'none';
                 return;
             }
             
             emptyState.classList.add('hidden');
-            recordCount.textContent = `${filteredLeaves.length} سجل`;
+            recordCount.textContent = `${totalItems} سجل`;
+
+            const totalPages = Math.ceil(totalItems / leavesPerPage);
             
-            filteredLeaves.forEach(leave => {
+            // ضبط الصفحة الحالية ضمن الحدود
+            if (currentLeavePage < 1) currentLeavePage = 1;
+            if (currentLeavePage > totalPages) currentLeavePage = totalPages;
+
+            // تحديد عناصر الصفحة الحالية فقط
+            const startIndex = (currentLeavePage - 1) * leavesPerPage;
+            const endIndex = Math.min(startIndex + leavesPerPage, totalItems);
+            const paginatedLeaves = filteredLeaves.slice(startIndex, endIndex);
+            
+            paginatedLeaves.forEach(leave => {
                 const employee = employees.find(e => e.id === leave.employeeId);
                 if (!employee) return;
                 
@@ -826,6 +855,45 @@ function loadEmployees() {
                 `;
                 mobileContainer.innerHTML += card;
             });
+
+            // إظهار وإدارة أزرار التنقل إذا كانت الصفحات أكثر من 1
+            if (totalPages > 1) {
+                paginationControls.style.display = 'flex';
+                renderLeavePaginationButtons(totalPages);
+            } else {
+                paginationControls.style.display = 'none';
+            }
+        }
+
+        // دالة تحديث وعرض أزرار الصفحات
+        function renderLeavePaginationButtons(totalPages) {
+            const prevBtn = document.getElementById('prevLeavePageBtn');
+            const nextBtn = document.getElementById('nextLeavePageBtn');
+            const pageNumbers = document.getElementById('leavePageNumbers');
+
+            if (!prevBtn || !nextBtn || !pageNumbers) return;
+
+            prevBtn.disabled = currentLeavePage === 1;
+            nextBtn.disabled = currentLeavePage === totalPages;
+
+            prevBtn.style.opacity = currentLeavePage === 1 ? '0.5' : '1';
+            nextBtn.style.opacity = currentLeavePage === totalPages ? '0.5' : '1';
+
+            pageNumbers.innerHTML = `صفحة ${currentLeavePage} من ${totalPages}`;
+
+            prevBtn.onclick = () => {
+                if (currentLeavePage > 1) {
+                    currentLeavePage--;
+                    renderLeaves();
+                }
+            };
+
+            nextBtn.onclick = () => {
+                if (currentLeavePage < totalPages) {
+                    currentLeavePage++;
+                    renderLeaves();
+                }
+            };
         }
 
         // Add leave
@@ -961,6 +1029,15 @@ function loadEmployees() {
                 });
             }
             
+            currentLeavePage = 1; // العودة للصفحة الأولى عند الفلترة
+            renderLeaves();
+        });
+
+        // Reset filter
+        document.getElementById('resetFilterBtn').addEventListener('click', () => {
+            document.getElementById('filterDate').value = '';
+            filteredLeaves = [...leaves];
+            currentLeavePage = 1; // العودة للصفحة الأولى
             renderLeaves();
         });
 

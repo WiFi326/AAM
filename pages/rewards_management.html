@@ -401,6 +401,17 @@
                             <!-- Table rows will be dynamically inserted here -->
                         </tbody>
                     </table>
+
+                    <!-- أزرار التنقل بين الصفحات لسجل المكافآت -->
+                <div id="rewardsPaginationControls" class="flex items-center justify-between p-4 border-t border-gray-200" style="display: none;">
+                    <button type="button" id="prevRewardPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                        السابق
+                    </button>
+                    <div id="rewardPageNumbers" class="text-sm font-semibold text-gray-700"></div>
+                    <button type="button" id="nextRewardPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                        التالي
+                    </button>
+                </div>
                     
                     <!-- Empty State -->
                     <div id="emptyState" class="empty-state hidden">
@@ -631,10 +642,15 @@ function loadEmployees() {
             });
         }
 
-        // Display rewards in table
+        // متغيرات نظام الصفحات للمكافآت
+        let currentRewardPage = 1;
+        const rewardsPerPage = 10;
+
+        // Display rewards in table with Pagination
         function displayRewards() {
             const tbody = document.getElementById('rewardsTableBody');
             const emptyState = document.getElementById('emptyState');
+            const paginationControls = document.getElementById('rewardsPaginationControls');
             
             let displayData = rewards;
             
@@ -643,9 +659,11 @@ function loadEmployees() {
                 displayData = rewards.filter(reward => reward.date === filteredDate);
             }
             
-            if (displayData.length === 0) {
+            const totalItems = displayData.length;
+            if (totalItems === 0) {
                 tbody.innerHTML = '';
                 emptyState.classList.remove('hidden');
+                if (paginationControls) paginationControls.style.display = 'none';
                 return;
             }
             
@@ -653,8 +671,19 @@ function loadEmployees() {
             
             // Sort by date (newest first)
             displayData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const totalPages = Math.ceil(totalItems / rewardsPerPage);
             
-            tbody.innerHTML = displayData.map(reward => {
+            // ضبط الصفحة الحالية ضمن الحدود
+            if (currentRewardPage < 1) currentRewardPage = 1;
+            if (currentRewardPage > totalPages) currentRewardPage = totalPages;
+
+            // تحديد عناصر الصفحة الحالية فقط
+            const startIndex = (currentRewardPage - 1) * rewardsPerPage;
+            const endIndex = Math.min(startIndex + rewardsPerPage, totalItems);
+            const paginatedRewards = displayData.slice(startIndex, endIndex);
+            
+            tbody.innerHTML = paginatedRewards.map(reward => {
                 const employee = employees.find(e => e.id === reward.employeeId);
                 const employeeName = employee ? employee.name : 'غير معروف';
                 
@@ -682,6 +711,45 @@ function loadEmployees() {
                     </tr>
                 `;
             }).join('');
+
+            // إظهار أزرار التنقل وإدارتها إذا كانت الصفحات أكثر من 1
+            if (totalPages > 1) {
+                paginationControls.style.display = 'flex';
+                renderRewardPaginationButtons(totalPages);
+            } else {
+                paginationControls.style.display = 'none';
+            }
+        }
+
+        // دالة تحديث وعرض أزرار الصفحات للمكافآت
+        function renderRewardPaginationButtons(totalPages) {
+            const prevBtn = document.getElementById('prevRewardPageBtn');
+            const nextBtn = document.getElementById('nextRewardPageBtn');
+            const pageNumbers = document.getElementById('rewardPageNumbers');
+
+            if (!prevBtn || !nextBtn || !pageNumbers) return;
+
+            prevBtn.disabled = currentRewardPage === 1;
+            nextBtn.disabled = currentRewardPage === totalPages;
+
+            prevBtn.style.opacity = currentRewardPage === 1 ? '0.5' : '1';
+            prevBtn.style.opacity = currentRewardPage === totalPages ? '0.5' : '1';
+
+            pageNumbers.innerHTML = `صفحة ${currentRewardPage} من ${totalPages}`;
+
+            prevBtn.onclick = () => {
+                if (currentRewardPage > 1) {
+                    currentRewardPage--;
+                    displayRewards();
+                }
+            };
+
+            nextBtn.onclick = () => {
+                if (currentRewardPage < totalPages) {
+                    currentRewardPage++;
+                    displayRewards();
+                }
+            };
         }
 
         // Add reward
@@ -725,6 +793,7 @@ function loadEmployees() {
             const filterDate = document.getElementById('filterDate').value;
             if (filterDate) {
                 filteredDate = filterDate;
+                currentRewardPage = 1; // العودة للصفحة الأولى
                 displayRewards();
                 showNotification('تم تطبيق التصفية', 'info');
             } else {
@@ -736,6 +805,7 @@ function loadEmployees() {
         document.getElementById('resetFilterBtn').addEventListener('click', () => {
             filteredDate = null;
             document.getElementById('filterDate').value = '';
+            currentRewardPage = 1; // العودة للصفحة الأولى
             displayRewards();
             showNotification('تم إعادة تعيين التصفية', 'info');
         });
