@@ -520,6 +520,18 @@
                             <!-- Table rows will be inserted here -->
                         </tbody>
                     </table>
+                    
+                </div>
+
+                <!-- أزرار التنقل بين الصفحات لسجل الزمنيات -->
+                <div id="breaksPaginationControls" class="flex items-center justify-between pt-4 mt-4 border-t border-gray-200" style="display: none;">
+                    <button type="button" id="prevBreakPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                        السابق
+                    </button>
+                    <div id="breakPageNumbers" class="text-sm font-semibold text-text-secondary"></div>
+                    <button type="button" id="nextBreakPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB;">
+                        التالي
+                    </button>
                 </div>
 
                 <!-- Mobile Cards View -->
@@ -749,7 +761,7 @@ eyeBtn.addEventListener('click', () => {
     } else {
         const remainingMinutes = MAX_BREAK_MINUTES - totalMinutes;
         hoursCard.className = "mt-2 p-3 rounded-lg text-sm md:text-base font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between";
-        hoursText.innerHTML = `⏱️ الساعات المتبقية: <span class="font-bold underline ml-1">${formatDuration(remainingMinutes)}</span> (من أصل 5س)`;
+        hoursText.innerHTML = `⏱️ الساعات المتبقية: <span class="font-bold underline ml-1">${formatDuration(remainingMinutes)}</span> (من أصل 5 ساعات)`;
     }
 
     // إظهار بطاقة النتيجة
@@ -882,26 +894,44 @@ function loadEmployees() {
             });
         }
 
-        // Render breaks table
+        // متغيرات نظام الصفحات للزمنيات
+        let currentBreakPage = 1;
+        const breaksPerPage = 10;
+
+        // Render breaks table with Pagination
         function renderBreaks() {
             const tableBody = document.getElementById('breaksTableBody');
             const mobileContainer = document.getElementById('mobileCardsContainer');
             const emptyState = document.getElementById('emptyState');
             const recordCount = document.getElementById('recordCount');
+            const paginationControls = document.getElementById('breaksPaginationControls');
             
             tableBody.innerHTML = '';
             mobileContainer.innerHTML = '';
             
-            if (filteredBreaks.length === 0) {
+            const totalItems = filteredBreaks.length;
+            if (totalItems === 0) {
                 emptyState.classList.remove('hidden');
                 recordCount.textContent = '0 سجل';
+                if(paginationControls) paginationControls.style.display = 'none';
                 return;
             }
             
             emptyState.classList.add('hidden');
-            recordCount.textContent = `${filteredBreaks.length} سجل`;
+            recordCount.textContent = `${totalItems} سجل`;
+
+            const totalPages = Math.ceil(totalItems / breaksPerPage);
             
-            filteredBreaks.forEach(breakTime => {
+            // ضبط الصفحة الحالية ضمن الحدود
+            if (currentBreakPage < 1) currentBreakPage = 1;
+            if (currentBreakPage > totalPages) currentBreakPage = totalPages;
+
+            // تحديد العناصر الخاصة بالصفحة الحالية فقط
+            const startIndex = (currentBreakPage - 1) * breaksPerPage;
+            const endIndex = Math.min(startIndex + breaksPerPage, totalItems);
+            const paginatedBreaks = filteredBreaks.slice(startIndex, endIndex);
+            
+            paginatedBreaks.forEach(breakTime => {
                 const employee = employees.find(e => e.id === breakTime.employeeId);
                 if (!employee) return;
                 
@@ -982,8 +1012,45 @@ function loadEmployees() {
                 `;
                 mobileContainer.innerHTML += card;
             });
+
+            // إظهار أزرار التنقل وتحديث حالتها إذا كان عدد الصفحات أكبر من 1
+            if (totalPages > 1) {
+                paginationControls.style.display = 'flex';
+                renderBreakPaginationButtons(totalPages);
+            } else {
+                paginationControls.style.display = 'none';
+            }
         }
 
+        // دالة تحديث أزرار التنقل الخاصة بالزمنيات
+        function renderBreakPaginationButtons(totalPages) {
+            const prevBtn = document.getElementById('prevBreakPageBtn');
+            const nextBtn = document.getElementById('nextBreakPageBtn');
+            const pageNumbers = document.getElementById('breakPageNumbers');
+
+            prevBtn.disabled = currentBreakPage === 1;
+            nextBtn.disabled = currentBreakPage === totalPages;
+
+            // تغيير شفافية الأزرار عند تعطيلها لتبدو واضحة
+            prevBtn.style.opacity = currentBreakPage === 1 ? '0.5' : '1';
+            nextBtn.style.opacity = currentBreakPage === totalPages ? '0.5' : '1';
+
+            pageNumbers.innerHTML = `صفحة ${currentBreakPage} من ${totalPages}`;
+
+            prevBtn.onclick = () => {
+                if (currentBreakPage > 1) {
+                    currentBreakPage--;
+                    renderBreaks();
+                }
+            };
+
+            nextBtn.onclick = () => {
+                if (currentBreakPage < totalPages) {
+                    currentBreakPage++;
+                    renderBreaks();
+                }
+            };
+        }
         // Validate time overlap
         function validateTimeOverlap(employeeId, date, startTime, duration, excludeBreakId = null) {
             const newStart = new Date(`${date} ${startTime}`);
@@ -1142,22 +1209,13 @@ function loadEmployees() {
             const dateEnd = document.getElementById('dateRangeEnd').value;
             
             filteredBreaks = breaks.filter(breakTime => {
-                // Employee filter
-                if (employeeFilter && breakTime.employeeId !== employeeFilter) {
-                    return false;
-                }
-                
-                // Date range filter
-                if (dateStart && breakTime.date < dateStart) {
-                    return false;
-                }
-                if (dateEnd && breakTime.date > dateEnd) {
-                    return false;
-                }
-                
+                if (employeeFilter && breakTime.employeeId !== employeeFilter) return false;
+                if (dateStart && breakTime.date < dateStart) return false;
+                if (dateEnd && breakTime.date > dateEnd) return false;
                 return true;
             });
             
+            currentBreakPage = 1; // العودة للصفحة الأولى عند الفلترة
             renderBreaks();
         }
 
