@@ -465,6 +465,18 @@
                                 <!-- Employees will be dynamically inserted here -->
                             </tbody>
                         </table>
+
+                        <!-- أزرار التنقل بين الصفحات -->
+<div id="paginationControls" class="flex items-center justify-between p-4 border-t border-gray-200" style="display: none;">
+    <button id="prevPageBtn" class="btn btn-ghost border border-gray-300 text-sm py-1 px-3">
+        السابق
+    </button>
+    <div id="pageNumbers" class="flex gap-2 text-sm font-semibold text-gray-700"></div>
+    <button id="nextPageBtn" class="btn btn-ghost border border-gray-300 text-sm py-1 px-3">
+        التالي
+    </button>
+</div>
+
                         <div id="noEmployeesMessage" class="no-employees-message" style="display: none;">
                             <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -833,34 +845,67 @@
 
         
 
-        // Load employees
-        function loadEmployees() {
-            const employeesRef = ref(database, 'employees');
-            onValue(employeesRef, (snapshot) => {
-                employees = [];
-                const tableBody = document.getElementById('employeesTableBody');
-                const noEmployeesMessage = document.getElementById('noEmployeesMessage');
-                tableBody.innerHTML = '';
+      let currentPage = 1;
+const itemsPerPage = 5;
 
-                 snapshot.forEach((childSnapshot) => {
-        const employee = childSnapshot.val();
-        employee.id = childSnapshot.key;
-        employees.push(employee);
+// دالة تحميل وتحديث الموظفين
+function loadEmployees() {
+    const employeesRef = ref(database, 'employees');
+    onValue(employeesRef, (snapshot) => {
+        employees = [];
+        snapshot.forEach((childSnapshot) => {
+            const employee = childSnapshot.val();
+            employee.id = childSnapshot.key;
+            employees.push(employee);
+        });
+
+        // ترتيب أبجدي
+        employees.sort((a, b) => 
+            a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' })
+        );
+
+        // عرض الصفحة الأولى عند إعادة التحميل
+        renderTablePage(currentPage);
     });
+}
 
-    // 🔥 ترتيب أبجدي عربي
-    employees.sort((a, b) => 
-        a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' })
-    );
-                
-                let count = 0;
+// دالة عرض الصفحة المحددة
+function renderTablePage(page) {
+    const tableBody = document.getElementById('employeesTableBody');
+    const noEmployeesMessage = document.getElementById('noEmployeesMessage');
+    const paginationControls = document.getElementById('paginationControls');
+    
+    tableBody.innerHTML = '';
+    
+    const totalItems = employees.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-    employees.forEach((employee) => {
-        count++;
+    if (totalItems === 0) {
+        noEmployeesMessage.style.display = 'block';
+        tableBody.style.display = 'none';
+        paginationControls.style.display = 'none';
+        return;
+    }
 
+    noEmployeesMessage.style.display = 'none';
+    tableBody.style.display = 'table-row-group';
+    paginationControls.style.display = 'flex';
+
+    // التأكد من أن الصفحة الحالية ضمن الحدود
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    currentPage = page;
+
+    // تحديد الموظفين الخاصين بالصفحة الحالية
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    const paginatedEmployees = employees.slice(startIndex, endIndex);
+
+    paginatedEmployees.forEach((employee, index) => {
+        const absoluteIndex = startIndex + index + 1; // تسلسل الموظف
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="employee-number">${count}</td>
+            <td class="employee-number">${absoluteIndex}</td>
             <td class="employee-name">${employee.name}</td>
             <td>
                 <button onclick="viewEmployeeDetails('${employee.id}')" class="details-btn">
@@ -868,19 +913,32 @@
                 </button>
             </td>
         `;
-
         tableBody.appendChild(row);
     });
 
-    if (count === 0) {
-        noEmployeesMessage.style.display = 'block';
-        tableBody.style.display = 'none';
-    } else {
-        noEmployeesMessage.style.display = 'none';
-        tableBody.style.display = 'table-row-group';
-    }
-            });
-        }
+    // تحديث أزرار التنقل
+    renderPaginationButtons(totalPages);
+}
+
+// دالة إنشاء أزرار صفحات النظام
+function renderPaginationButtons(totalPages) {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const pageNumbers = document.getElementById('pageNumbers');
+
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+
+    pageNumbers.innerHTML = `صفحة ${currentPage} من ${totalPages}`;
+
+    prevBtn.onclick = () => {
+        if (currentPage > 1) renderTablePage(currentPage - 1);
+    };
+
+    nextBtn.onclick = () => {
+        if (currentPage < totalPages) renderTablePage(currentPage + 1);
+    };
+}
 
         // Add employee
         document.getElementById('addEmployeeForm').addEventListener('submit', (e) => {
