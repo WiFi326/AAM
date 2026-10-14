@@ -382,6 +382,17 @@
                             <!-- Table rows will be inserted here -->
                         </tbody>
                     </table>
+
+                    <!-- أزرار التنقل بين الصفحات لسجل المخالفات -->
+                <div id="violationsPaginationControls" class="flex items-center justify-between p-4 border-t border-gray-200" style="display: none;">
+                    <button type="button" id="prevViolationPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; padding: 0.5rem 1rem; border-radius: 6px;">
+                        السابق
+                    </button>
+                    <div id="violationPageNumbers" class="text-sm font-semibold text-gray-700"></div>
+                    <button type="button" id="nextViolationPageBtn" class="action-btn" style="background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; padding: 0.5rem 1rem; border-radius: 6px;">
+                        التالي
+                    </button>
+                </div>
                     
                     <!-- Empty State -->
                     <div id="emptyState" class="empty-state hidden">
@@ -638,24 +649,47 @@ function loadEmployees() {
             });
         }
 
-        // Render violations table
+        // متغيرات نظام الصفحات للمخالفات
+        let currentViolationPage = 1;
+        const violationsPerPage = 10;
+        let lastFilteredData = null; // لتخزين الداتا الحالية بعد التصفية للتعامل مع الصفحات
+
+        // Render violations table with Pagination
         function renderViolations(filteredViolations = null) {
-            const dataToRender = filteredViolations || violations;
-            violationsTableBody.innerHTML = '';
+            if (filteredViolations !== null) {
+                lastFilteredData = filteredViolations;
+            }
             
-            if (dataToRender.length === 0) {
+            const dataToRender = lastFilteredData || violations;
+            violationsTableBody.innerHTML = '';
+            const paginationControls = document.getElementById('violationsPaginationControls');
+            
+            const totalItems = dataToRender.length;
+            if (totalItems === 0) {
                 emptyState.classList.remove('hidden');
                 totalCount.textContent = '0';
+                if (paginationControls) paginationControls.style.display = 'none';
                 return;
             }
             
             emptyState.classList.add('hidden');
-            totalCount.textContent = dataToRender.length;
+            totalCount.textContent = totalItems;
             
             // Sort by date (newest first)
             dataToRender.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const totalPages = Math.ceil(totalItems / violationsPerPage);
             
-            dataToRender.forEach(violation => {
+            // ضبط الصفحة الحالية ضمن الحدود
+            if (currentViolationPage < 1) currentViolationPage = 1;
+            if (currentViolationPage > totalPages) currentViolationPage = totalPages;
+
+            // تحديد عناصر الصفحة الحالية فقط
+            const startIndex = (currentViolationPage - 1) * violationsPerPage;
+            const endIndex = Math.min(startIndex + violationsPerPage, totalItems);
+            const paginatedViolations = dataToRender.slice(startIndex, endIndex);
+            
+            paginatedViolations.forEach(violation => {
                 const employee = employees.find(e => e.id === violation.employeeId);
                 const employeeName = employee ? employee.name : 'غير معروف';
                 
@@ -695,6 +729,45 @@ function loadEmployees() {
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', () => openDeleteModal(btn.dataset.id));
             });
+
+            // إظهار أزرار التنقل وإدارتها إذا كانت الصفحات أكثر من 1
+            if (totalPages > 1) {
+                paginationControls.style.display = 'flex';
+                renderViolationPaginationButtons(totalPages);
+            } else {
+                paginationControls.style.display = 'none';
+            }
+        }
+
+        // دالة تحديث وعرض أزرار الصفحات للمخالفات
+        function renderViolationPaginationButtons(totalPages) {
+            const prevBtn = document.getElementById('prevViolationPageBtn');
+            const nextBtn = document.getElementById('nextViolationPageBtn');
+            const pageNumbers = document.getElementById('violationPageNumbers');
+
+            if (!prevBtn || !nextBtn || !pageNumbers) return;
+
+            prevBtn.disabled = currentViolationPage === 1;
+            nextBtn.disabled = currentViolationPage === totalPages;
+
+            prevBtn.style.opacity = currentViolationPage === 1 ? '0.5' : '1';
+            nextBtn.style.opacity = currentViolationPage === totalPages ? '0.5' : '1';
+
+            pageNumbers.innerHTML = `صفحة ${currentViolationPage} من ${totalPages}`;
+
+            prevBtn.onclick = () => {
+                if (currentViolationPage > 1) {
+                    currentViolationPage--;
+                    renderViolations();
+                }
+            };
+
+            nextBtn.onclick = () => {
+                if (currentViolationPage < totalPages) {
+                    currentViolationPage++;
+                    renderViolations();
+                }
+            };
         }
 
         // Submit violation form

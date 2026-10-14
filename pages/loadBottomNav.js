@@ -3,7 +3,10 @@
     'use strict';
     
     // تحميل الشريط السفلي عند جاهزية DOM
-    document.addEventListener('DOMContentLoaded', loadBottomNav);
+    document.addEventListener('DOMContentLoaded', () => {
+        loadBottomNav();
+        applySavedThemeGlobally(); // تطبيق الثيم المحفوظ فور فتح أي صفحة
+    });
     
     async function loadBottomNav() {
         try {
@@ -224,18 +227,14 @@
     }
     
     function addContentPadding() {
-        // إضافة padding للمحتوى الرئيسي
         const mainContent = document.querySelector('.main-content');
         if (mainContent) {
             mainContent.style.paddingBottom = '75px';
         }
-        
-        // إضافة padding للـ body أيضاً
         document.body.style.paddingBottom = '65px';
     }
     
     function setActiveNavItem() {
-        // الانتظار قليلاً ثم تحديد العنصر النشط
         setTimeout(() => {
             const currentPage = window.location.pathname.split('/').pop();
             const pageMap = {
@@ -265,9 +264,6 @@
     }
     
     function createFallbackBottomNav() {
-        console.log('Creating fallback bottom navigation');
-        
-        // إنشاء شريط سفلي بسيط كبديل
         const fallbackNav = document.createElement('div');
         fallbackNav.className = 'bottom-nav';
         fallbackNav.style.cssText = `
@@ -293,5 +289,23 @@
         
         document.body.appendChild(fallbackNav);
         addContentPadding();
+    }
+
+    // ====== تطبيق الثيم والخلفية الشامل في كل الصفحات ======
+    function applySavedThemeGlobally() {
+        const savedCustomBg = localStorage.getItem('customGlassBg');
+        const savedTheme = localStorage.getItem('glassTheme') || 'theme-default';
+
+        document.body.classList.remove('theme-default', 'theme-cyan', 'theme-pink', 'theme-blue', 'theme-slate', 'theme-orange', 'theme-teal');
+
+        if (savedCustomBg) {
+            document.body.style.backgroundImage = `url('${savedCustomBg}')`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundAttachment = 'fixed';
+        } else {
+            document.body.style.backgroundImage = '';
+            document.body.classList.add(savedTheme);
+        }
     }
 })();

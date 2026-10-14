@@ -2382,3 +2382,263 @@ h5{
     padding-right: 2rem;
   }
 }
+
+/* =========================================================
+   تأثير الزجاج اللامع (Glassmorphism Effects)
+   ========================================================= */
+
+/* خلفية الصفحة الأساسية لتظهر إضاءة وتأثير الزجاج بشكل جميل */
+body {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%) !important;
+  min-height: 100vh;
+}
+
+/* 1. الكروت والحاويات الزجاجية (Glass Card) */
+.card, 
+.form-section, 
+.bg-white, 
+.statistics-table-container, 
+.search-section {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08), 
+              inset 0 0 12px 0 rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+.card:hover, 
+.form-section:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12), 
+              inset 0 0 18px 0 rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 2. حقول الإدخال والقوائم الزجاجية (Glass Input & Select & Textarea) */
+.input, 
+.select, 
+.textarea, 
+.search-input {
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 12px !important;
+  color: #111827 !important;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s ease !important;
+}
+
+/* حالة التركيز (Hover & Focus) للحقول */
+.input:hover, .select:hover, .textarea:hover, .search-input:hover {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.input:focus, .select:focus, .textarea:focus, .search-input:focus {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: #2a439f !important;
+  box-shadow: 0 0 0 4px rgba(42, 67, 159, 0.15), 
+              inset 0 1px 2px 0 rgba(255, 255, 255, 0.8) !important;
+  outline: none !important;
+}
+
+/* 3. النوافذ المنبثقة الزجاجية (Glass Modal) */
+.modal-overlay {
+  background: rgba(17, 24, 39, 0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 
+              inset 0 0 15px rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 4. جداول العرض الشفافة الزجاجية */
+.statistics-table, .data-table, .rewards-table, .violations-table {
+  background: transparent !important;
+}
+
+.statistics-table tr, .data-table tr, .rewards-table tr, .violations-table tr {
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* تدرجات ألوان خلفيات الصفحة الشاملة للتيمات */
+body.theme-default { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%) !important; }
+body.theme-cyan    { background: linear-gradient(135deg, #1793a3 0%, #3dbec6 50%, #e0c3b1 100%) !important; }
+body.theme-pink    { background: linear-gradient(135deg, #d881b8 0%, #e8a7cb 100%) !important; }
+body.theme-blue    { background: linear-gradient(135deg, #09356e 0%, #7e6bd2 100%) !important; }
+body.theme-slate   { background: linear-gradient(135deg, #527380 0%, #8fa3ad 100%) !important; }
+body.theme-orange  { background: linear-gradient(135deg, #b84361 0%, #f1a17c 100%) !important; }
+body.theme-teal    { background: linear-gradient(135deg, #3e384b 0%, #9f8bb2 100%) !important; }
+
+/* مظهر شاشة التحميل الموحد في كل البرنامج بلون زجاجي لامع وأنيق */
+.loading-screen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    /* اللون الأصلي مع طبقة لمعان خفيفة وزجاجية */
+    background: linear-gradient(135deg, rgba(73, 35, 111, 0.92) 60%, rgba(42, 67, 159, 0.92) 100%) !important;
+    backdrop-filter: blur(12px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+    
+    /* حدود براقة وإضاءة زجاجية داخلية وخارجية */
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999 !important;
+    transition: opacity 0.5s ease-out !important;
+}
+
+/* تأثير لمعان متحرك (Shimmer effect) يعطي بريقاً مستمراً لشاشة التحميل */
+.loading-screen::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 45%,
+        rgba(255, 255, 255, 0.12) 50%,
+        transparent 55%
+    );
+    transform: rotate(25deg);
+    animation: shimmerGlow 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmerGlow {
+    0% { transform: translateY(-100%) rotate(25deg); }
+    100% { transform: translateY(100%) rotate(25deg); }
+}
+
+/* دائرة التحميل مع توهج براق */
+.loading-screen .loading-spinner,
+.loading-spinner {
+    width: 60px !important;
+    height: 60px !important;
+    border: 4px solid rgba(255, 255, 255, 0.25) !important;
+    border-top-color: #ffffff !important;
+    border-radius: 50% !important;
+    animation: spin 1s linear infinite !important;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4) !important;
+    z-index: 2 !important;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   تنسيق الزجاج اللامع للجداول والعناصر (عام لكل البرنامج)
+   ========================================== */
+
+/* إعطاء خلفية زجاجية للجداول والمكونات الحاوية لها */
+.statistics-table-container,
+.table-container,
+.glass-card,
+table.statistics-table,
+table.data-table {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(14px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* تنسيق خلايا وعناوين الجداول بلمظهر الزجاجي */
+.statistics-table th,
+.statistics-table td,
+table th,
+table td {
+    background: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* هيدر الجدول (الترويسة) بتصميم زجاجي أرجواني فاخر ومتناسق مع شاشة التحميل */
+.statistics-table thead,
+table thead {
+    background: linear-gradient(135deg, rgba(73, 35, 111, 0.85) 60%, rgba(42, 67, 159, 0.85) 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.statistics-table thead th,
+table thead th {
+    background: transparent !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.25) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* تأثير اللمعان والبريق المتحرك عند المرور على صفوف الجدول (Shimmer / Hover Glow) */
+.statistics-table tbody tr,
+table tbody tr {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.statistics-table tbody tr:hover,
+table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.85) !important;
+    transform: translateY(-2px) scale(1.005);
+    box-shadow: 0 6px 20px rgba(73, 35, 111, 0.12), inset 0 0 15px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* تأثير بريق خفيف (Shimmer Effect) يمر تلقائياً على حاوية الجدول لجعلها حية وبراقة */
+.statistics-table-container::after,
+.table-container::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 48%,
+        rgba(255, 255, 255, 0.25) 50%,
+        transparent 52%
+    );
+    transform: rotate(25deg) translateY(-100%);
+    animation: tableShimmer 6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes tableShimmer {
+    0% { transform: rotate(25deg) translateY(-100%); }
+    20% { transform: rotate(25deg) translateY(100%); }
+    100% { transform: rotate(25deg) translateY(100%); }
+}
+
+/* تنسيق كروت الموبايل (Responsive Cards) إذا كانت مفعلة في الشاشات الصغيرة */
+.stat-card-mobile,
+.mobile-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(12px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}

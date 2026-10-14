@@ -56,7 +56,7 @@
             padding: 2rem;
             padding-bottom: 100px; /* زيادة المسافة للشريط السفلي */
             min-height: 100vh;
-            background: #F9FAFB;
+            background: transparent !important;
             width: 100%;
             box-sizing: border-box;
         }
@@ -571,6 +571,7 @@
                 font-size: 1rem;
             }
         }
+
     </style>
   
   <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Femployeem5022back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.12"></script>
@@ -708,6 +709,19 @@
 
 
   <script type="module">
+
+    // تطبيق الثيم المحفوظ فوراً في صفحة الإحصائيات
+    const savedCustomBg = localStorage.getItem('customGlassBg');
+    const savedTheme = localStorage.getItem('glassTheme') || 'theme-default';
+    if (savedCustomBg) {
+        document.body.style.backgroundImage = `url('${savedCustomBg}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+    } else {
+        document.body.classList.add(savedTheme);
+    }
+
     // Firebase configuration
  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
@@ -1635,6 +1649,8 @@ if (exportBtn) {
 
 
     });
+
+    
 </script>
 <!-- تضمين الشريط السفلي عبر JavaScript -->
 <script src="loadBottomNav.js"></script>

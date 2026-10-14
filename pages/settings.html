@@ -386,6 +386,37 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* تنسيق دوائر خيارات ألوان الخلفية */
+        .theme-option {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-option:hover {
+            transform: scale(1.15);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+        }
+
+        .theme-option.active {
+            outline: 3px solid #047857;
+            outline-offset: 3px;
+        }
+
+        /* تدرجات ألوان الخيارات (مطابقة للصورة) */
+        .theme-default { background: linear-gradient(135deg, #f3f4f6, #d1d5db); }
+        .theme-cyan    { background: linear-gradient(135deg, #1793a3, #3dbec6, #e0c3b1); }
+        .theme-pink    { background: linear-gradient(135deg, #d881b8, #e8a7cb); }
+        .theme-blue    { background: linear-gradient(135deg, #0062e6, #33aeff); }
+        .theme-slate   { background: linear-gradient(135deg, #527380, #8fa3ad); }
+        .theme-orange  { background: linear-gradient(135deg, #b84361, #f1a17c); }
+        .theme-teal    { background: linear-gradient(135deg, #1d6961, #9f8bb2); }
+
     </style>
   
   <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Femployeem5022back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.12"></script>
@@ -434,6 +465,40 @@
                     إدارة الموظفين
                 </h2>
 
+                          <!-- قسم مظهر وخلفية النظام الزجاجي -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8 fade-in">
+                <h2 class="text-2xl font-bold text-text-primary mb-2 font-heading flex items-center">
+                    <svg class="w-8 h-8 text-primary ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                    </svg>
+                    مظهر وتيم النظام
+                </h2>
+                <p class="text-text-secondary text-sm mb-6">اختر خلفية التدرج اللوني المفضلة لديك لتطبيق المظهر الزجاجي التفاعلي على النظام بالكامل.</p>
+
+                <!-- خيارات ألوان التيم الزجاجي -->
+                <div class="flex flex-wrap gap-4 items-center justify-start mb-6">
+                    <button type="button" onclick="setGlassTheme('theme-default')" class="theme-option theme-default active" title="الافتراضي"></button>
+                    <button type="button" onclick="setGlassTheme('theme-cyan')" class="theme-option theme-cyan" title="فيروزي زجاجي"></button>
+                    <button type="button" onclick="setGlassTheme('theme-pink')" class="theme-option theme-pink" title="وردي ناعم"></button>
+                    <button type="button" onclick="setGlassTheme('theme-blue')" class="theme-option theme-blue" title="أزرق عميق"></button>
+                    <button type="button" onclick="setGlassTheme('theme-slate')" class="theme-option theme-slate" title="رمادي هادئ"></button>
+                    <button type="button" onclick="setGlassTheme('theme-orange')" class="theme-option theme-orange" title="غروب دافئ"></button>
+                    <button type="button" onclick="setGlassTheme('theme-teal')" class="theme-option theme-teal" title="زمردي تيل"></button>
+                </div>
+
+                <!-- خيار رفع خلفية خاصة من الجهاز -->
+                <div class="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-primary transition-colors bg-white/30">
+                    <label for="customBgInput" class="cursor-pointer block">
+                        <svg class="w-8 h-8 mx-auto text-text-secondary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-sm font-semibold text-text-primary">اختر صورة خلفية من جهازك</span>
+                        <p class="text-xs text-text-secondary mt-1">تنسيق الصور المدعوم (PNG, JPG). يتم حفظ الصورة محلياً في متصفحك.</p>
+                    </label>
+                    <input type="file" id="customBgInput" accept="image/*" class="hidden" onchange="uploadCustomBackground(this)">
+                </div>
+            </div>
+
                 <!-- Employee Management Actions -->
                 <div class="employee-management-actions">
                     <button id="addEmployeeBtn" class="add-employee-btn">
@@ -450,6 +515,8 @@
                         </svg>
                         قائمة الموظفين
                     </button>
+
+          
                     
                     <!-- قائمة الموظفين (مخفي بشكل افتراضي) -->
                     <div id="employeesListContainer" class="employees-list-container">
@@ -465,6 +532,8 @@
                                 <!-- Employees will be dynamically inserted here -->
                             </tbody>
                         </table>
+
+                        
 
                         <!-- أزرار التنقل بين الصفحات -->
 <div id="paginationControls" class="flex items-center justify-between p-4 border-t border-gray-200" style="display: none;">
@@ -1165,6 +1234,66 @@ if (employee.type === 'Technician') {
                 }
             });
         });
+
+        // دالة تغيير تيم الخلفية
+        window.setGlassTheme = function(themeClass) {
+            // إزالة الصورة الخاصة إذا كانت محددة
+            localStorage.removeItem('customGlassBg');
+            
+            // حفظ كلاس التيم بالمتصفح
+            localStorage.setItem('glassTheme', themeClass);
+            
+            // تطبيق التيم فوراً على الجسم
+            applySavedTheme();
+            
+            // تحديد الزر النشط visual
+            document.querySelectorAll('.theme-option').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.${themeClass}`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            if(typeof showNotification === 'function') {
+                showNotification('تم تغيير تيم الخلفية بنجاح');
+            }
+        };
+
+        // دالة رفع خلفية خاصة من الجهاز
+        window.uploadCustomBackground = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const bgDataUrl = e.target.result;
+                    localStorage.setItem('customGlassBg', bgDataUrl);
+                    applySavedTheme();
+                    if(typeof showNotification === 'function') {
+                        showNotification('تم حفظ الصورة كخلفية للنظام بنجاح');
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        // دالة تطبيق التيم المحفوظ فور فتح الصفحة
+        function applySavedTheme() {
+            const savedCustomBg = localStorage.getItem('customGlassBg');
+            const savedTheme = localStorage.getItem('glassTheme') || 'theme-default';
+
+            // إزالة جميع التيمات السابقة من جسم الصفحة
+            document.body.classList.remove('theme-default', 'theme-cyan', 'theme-pink', 'theme-blue', 'theme-slate', 'theme-orange', 'theme-teal');
+
+            if (savedCustomBg) {
+                document.body.style.backgroundImage = `url('${savedCustomBg}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            } else {
+                document.body.style.backgroundImage = '';
+                document.body.classList.add(savedTheme);
+            }
+        }
+
+        // تشغيل تطبيق التيم فور تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', applySavedTheme);
+        applySavedTheme();
 
       
     </script>
