@@ -360,12 +360,29 @@
                 
                 <form id="breakForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Employee Selection -->
-                    <div>
-                        <label for="employeeSelect" class="label">اسم الموظف <span class="text-error">*</span></label>
-                        <select id="employeeSelect" class="select" required>
-                            <option value="">اختر الموظف</option>
-                        </select>
-                    </div>
+   
+<div>
+    <label for="employeeSelect" class="label">اسم الموظف <span class="text-error">*</span></label>
+    <div class="flex items-center gap-2">
+        <!-- حقل الاختيار -->
+        <select id="employeeSelect" class="select flex-1" required>
+            <option value="">اختر الموظف</option>
+        </select>
+
+        <!-- زر العين: بصف الحقل، باهت مصغر بدون حدود، ومخفي افتراضياً -->
+        <button type="button" id="checkEmployeeHoursBtn" class="text-gray-400 hover:text-primary transition-colors p-1.5 rounded-full opacity-60 hover:opacity-100 hidden" title="عرض الساعات المتبقية">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- الحقل الذي يظهر تحته النتيجة بخط واضح وحجم طبيعي -->
+    <div id="employeeHoursCard" class="hidden mt-2 p-3 rounded-lg font-medium transition-all flex items-center justify-between border">
+        <span id="employeeHoursText"></span>
+    </div>
+</div>
 
                     <!-- Date -->
                     <div>
@@ -679,6 +696,59 @@ onAuthStateChanged(auth, (user) => {
             }
             return `${hours} ساعة و ${remainingMins} دقيقة`;
         }
+
+        
+const MAX_BREAK_MINUTES = 300; // 5 ساعات
+
+const employeeSelect = document.getElementById('employeeSelect');
+const eyeBtn = document.getElementById('checkEmployeeHoursBtn');
+const hoursCard = document.getElementById('employeeHoursCard');
+const hoursText = document.getElementById('employeeHoursText');
+
+// 1. إظهار/إخفاء زر العين حسب اختيار الموظف
+employeeSelect.addEventListener('change', () => {
+    // إخفاء النتيجة دائماً عند تغيير الموظف
+    hoursCard.classList.add('hidden');
+
+    if (employeeSelect.value) {
+        eyeBtn.classList.remove('hidden'); // إظهار العين بصف الحقل
+    } else {
+        eyeBtn.classList.add('hidden'); // إخفاء العين
+    }
+});
+
+// 2. الضغط على العين لإظهار / إخفاء النتيجة أسفل القائمة
+eyeBtn.addEventListener('click', () => {
+    // إخفاء الحقل إذا كان معروضاً
+    if (!hoursCard.classList.contains('hidden')) {
+        hoursCard.classList.add('hidden');
+        return;
+    }
+
+    const employeeId = employeeSelect.value;
+    if (!employeeId) return;
+
+    // حساب مجموع دقائق الزمنيات المسجلة للموظف
+    let totalMinutes = 0;
+    breaks.forEach(b => {
+        if (b.employeeId === employeeId) {
+            totalMinutes += parseInt(b.duration || 0);
+        }
+    });
+
+    // تجهيز حقل النتيجة بخط طبيعي وواضح (text-sm / text-base)
+    if (totalMinutes > MAX_BREAK_MINUTES) {
+        hoursCard.className = "mt-2 p-3 rounded-lg text-sm md:text-base font-bold bg-red-50 text-red-700 border border-red-200 flex items-center justify-between";
+        hoursText.innerHTML = `⚠️ تجاوز الحد الأقصى للزمنيات (المجموع الحالي: ${formatDuration(totalMinutes)})`;
+    } else {
+        const remainingMinutes = MAX_BREAK_MINUTES - totalMinutes;
+        hoursCard.className = "mt-2 p-3 rounded-lg text-sm md:text-base font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between";
+        hoursText.innerHTML = `⏱️ الساعات المتبقية للموظف: <span class="font-bold underline ml-1">${formatDuration(remainingMinutes)}</span> (من أصل 5 ساعات)`;
+    }
+
+    // إظهار بطاقة النتيجة
+    hoursCard.classList.remove('hidden');
+});
 
         // Get job type in Arabic
         function getJobTypeArabic(type) {
