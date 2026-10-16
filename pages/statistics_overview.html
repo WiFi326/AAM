@@ -852,7 +852,8 @@ onAuthStateChanged(auth, (user) => {
             'leave': 'إجازة',
             'reward': 'مكافأة',
             'violation': 'مخالفة',
-            'break': 'زمنية'
+            'break': 'زمنية',
+            'overtime': 'أوفر تايم'
         };
         return labels[type] || type;
     }
@@ -939,7 +940,7 @@ onAuthStateChanged(auth, (user) => {
         
         allStatistics = [];
         let loadedCount = 0;
-        const totalTypes = 3; // leaves, rewards, violations
+        const totalTypes = 4; // صاروا 5 أنواع (إجازات، مكافآت، مخالفات، زمنيات، أوفر تايم)
         
         // Load leaves
         const leavesRef = ref(database, 'leaves');
@@ -952,8 +953,8 @@ onAuthStateChanged(auth, (user) => {
                     type: 'leave',
                     employeeName: getEmployeeName(leave.employeeId),
                     date: leave.startDate,
-                    details: getLeaveTypeArabic(leave.leaveType) || 'إجازة', // فقط نوع الإجازة
-                    notes: '-' // ملاحظات للإجازة تكون "-"
+                    details: getLeaveTypeArabic(leave.leaveType) || 'إجازة',
+                    notes: '-'
                 });
             });
             loadedCount++;
@@ -977,8 +978,8 @@ onAuthStateChanged(auth, (user) => {
                     type: 'reward',
                     employeeName: getEmployeeName(reward.employeeId),
                     date: reward.date,
-                    details: '-', // التفاصيل للمكافأة تكون "-"
-                    notes: reward.reason || 'لا يوجد سبب' // سبب المكافأة في الملاحظات
+                    details: '-',
+                    notes: reward.reason || 'لا يوجد سبب'
                 });
             });
             loadedCount++;
@@ -1002,8 +1003,8 @@ onAuthStateChanged(auth, (user) => {
                     type: 'violation',
                     employeeName: getEmployeeName(violation.employeeId),
                     date: violation.date,
-                    details: getSeverityLabel(violation.severity) || 'غير محدد', // مستوى الخطورة
-                    notes: violation.reason || 'لا يوجد سبب' // سبب المخالفة في الملاحظات
+                    details: getSeverityLabel(violation.severity) || 'غير محدد',
+                    notes: violation.reason || 'لا يوجد سبب'
                 });
             });
             loadedCount++;
@@ -1016,31 +1017,59 @@ onAuthStateChanged(auth, (user) => {
             loadedCount++;
         });
 
-         // Load break times (الزمنيات)
-    const breaksRef = ref(database, 'breakTimes');
-    onValue(breaksRef, (snapshot) => {
-        console.log('تحميل الزمنيات.');
-        snapshot.forEach((childSnapshot) => {
-            const bt = childSnapshot.val();
-            allStatistics.push({
-                id: childSnapshot.key,
-                type: 'break', // نوع جديد
-                employeeName: getEmployeeName(bt.employeeId),
-                date: bt.date, // تاريخ الزمنية
-                // نقدر نستخدم هذي بس للعرض في الجدول (مو مهم للأكسل)
-                details: `${bt.startTime} - ${bt.duration} دقيقة`,
-                notes: bt.notes || ''
+        // Load break times (الزمنيات)
+        const breaksRef = ref(database, 'breakTimes');
+        onValue(breaksRef, (snapshot) => {
+            console.log('تحميل الزمنيات...');
+            snapshot.forEach((childSnapshot) => {
+                const bt = childSnapshot.val();
+                allStatistics.push({
+                    id: childSnapshot.key,
+                    type: 'break',
+                    employeeName: getEmployeeName(bt.employeeId),
+                    date: bt.date,
+                    details: `${bt.startTime} - ${bt.duration} دقيقة`,
+                    notes: bt.notes || ''
+                });
             });
+            loadedCount++;
+            if (loadedCount === totalTypes) {
+                console.log('تم تحميل جميع البيانات');
+                updateDisplay();
+            }
+        }, (error) => {
+            console.error('خطأ في تحميل الزمنيات:', error);
+            loadedCount++;
         });
-        loadedCount++;
-        if (loadedCount === totalTypes) {
-            console.log('تم تحميل جميع البيانات');
-            updateDisplay();
-        }
-    }, (error) => {
-        console.error('خطأ في تحميل الزمنيات:', error);
-        loadedCount++;
-    });
+
+        // Load overtimes (الأوفر تايم المتاح فقط) - صارت دالة منفصلة وصحيحة
+        const overtimesRef = ref(database, 'overtimes');
+        onValue(overtimesRef, (snapshot) => {
+            console.log('تحميل الأوفر تايم...');
+            snapshot.forEach((childSnapshot) => {
+                const ot = childSnapshot.val();
+                
+                // الشرط الأساسي: يظهر فقط إذا كان ضمن الوقت المتاح (غير مستهلك)
+                if (!ot.isConsumed) {
+                    allStatistics.push({
+                        id: childSnapshot.key,
+                        type: 'overtime',
+                        employeeName: getEmployeeName(ot.employeeId),
+                        date: ot.date,
+                        details: formatDuration(ot.duration),
+                        notes: ot.notes || '-'
+                    });
+                }
+            });
+            loadedCount++;
+            if (loadedCount === totalTypes) {
+                console.log('تم تحميل جميع البيانات');
+                updateDisplay();
+            }
+        }, (error) => {
+            console.error('خطأ في تحميل الأوفر تايم:', error);
+            loadedCount++;
+        });
     }
 
     // متغيرات نظام الصفحات لقسم الإحصائيات

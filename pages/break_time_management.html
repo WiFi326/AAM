@@ -309,6 +309,37 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        /* تَبويبات التبديل (زمنيات / أوفر تايم) */
+        .module-switcher {
+            display: flex;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .module-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6283dc;
+            text-decoration: none;
+        }
+        .module-tab.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #49236f;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
     </style>
   <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Femployeem5022back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.12"></script>
   <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2"></script>
@@ -347,6 +378,12 @@
                 </div>
             </div>
         </header>
+
+        <!-- أزرار التبديل بين (الزمنيات) و (الأوفر تايم) -->
+            <div class="module-switcher">
+                <a href="break_time_management.html" class="module-tab active">الزمنيات</a>
+                <a href="overtime_management.html" class="module-tab">الأوفر تايم</a>
+            </div>
 
         <!-- Form Section -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

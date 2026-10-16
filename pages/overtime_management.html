@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الأوفر تايم - مدير الموظفين</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="icon" type="image/png" href="../assets/favicon.png?v=2">
+    <link rel="shortcut icon" href="../assets/favicon.png?v=2">
+    <style>
+        body {
+            font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #49236f 0%, #2a439f 100%) fixed;
+        }
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #49236f 60%, #2a439f 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 60px; height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* تأثير الزجاج اللامع العام (Glassmorphism) */
+        .glass-box {
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 1.25rem !important; /* زوايا منحنية غير حادة */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        /* تَبويبات التبديل (زمنيات / أوفر تايم) */
+        .module-switcher {
+            display: flex;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .module-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6283dc;
+            text-decoration: none;
+        }
+        .module-tab.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #49236f;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* تبويبات الجدول (الوقت المتاح / الوقت المستهلك) */
+        .table-switcher {
+            display: flex; background: rgba(243, 244, 246, 0.7); padding: 4px; border-radius: 10px; margin-bottom: 1.5rem; max-width: 300px;
+        }
+        .table-tab {
+            flex: 1; text-align: center; padding: 8px 16px; font-weight: 600; font-size: 0.9rem; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; color: #4B5563;
+        }
+        .table-tab.active {
+            background: #047857; color: white; box-shadow: 0 2px 8px rgba(4,120,87,0.2);
+        }
+
+        /* تنسيق الجدول الزجاجي ذو الزوايا المنحنية */
+        .table-container { 
+            overflow-x: visible !important; 
+            border-radius: 1.25rem !important; 
+            background: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; background: transparent; }
+        .data-table thead { background: linear-gradient(135deg, #49236f 60%, #2a439f 100%); color: white; }
+        .data-table th:first-child { border-top-right-radius: 1.25rem; }
+        .data-table th:last-child { border-top-left-radius: 1.25rem; }
+        .data-table th { padding: 1.2rem 1.5rem; text-align: right; font-weight: 600; font-size: 0.875rem; white-space: nowrap; }
+        .data-table td { padding: 1.2rem 1.5rem; text-align: right; border-bottom: 1px solid rgba(229, 231, 235, 0.6); font-size: 0.875rem; position: relative; }
+        .data-table tbody tr { background: rgba(219, 234, 254, 0.5); transition: all 0.2s ease; }
+        .data-table tbody tr:hover { background: rgba(147, 197, 253, 0.7); }
+
+        .action-btn { padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 500; cursor: pointer; border: none; color: white; }
+        .reopen-btn { background: #D97706; } .reopen-btn:hover { background: #B45309; }
+
+        /* زر النقاط الثلاث الرئيسي */
+        .options-toggle-btn {
+            background: #4B5563;
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s;
+        }
+        .options-toggle-btn.active {
+            transform: rotate(90deg);
+            background: #1F2937;
+        }
+
+        /* حاوية الكرات الثلاث المنبثقة */
+        .balls-container {
+            display: none;
+            position: absolute;
+            right: 55px; 
+            left: auto;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: row-reverse; 
+            gap: 8px;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .balls-container.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* تصميم كل كرة دائرية تحمل خياراً (استهلاك، تعديل، حذف) */
+        .action-ball {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+        .action-ball:hover {
+            transform: scale(1.15);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.35);
+        }
+        .ball-consume { background: #059669; } /* أخضر للاستهلاك */
+        .ball-edit { background: #2563EB; }    /* أزرق للتعديل */
+        .ball-delete { background: #DC2626; }  /* أحمر للحذف */
+
+        /* المودال الزجاجي المنحني */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
+            display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; backdrop-filter: blur(6px);
+        }
+        .modal-overlay.hidden { display: none; }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-radius: 1.5rem; padding: 2rem; max-width: 500px; width: 100%; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .notification {
+            position: fixed; top: 1rem; right: 1rem; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); padding: 1rem 1.5rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 3000; display: flex; align-items: center; gap: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .notification.hidden { display: none; }
+        .notification-success { border-right: 4px solid #059669; }
+        .notification-error { border-right: 4px solid #DC2626; }
+    </style>
+</head>
+<body class="bg-background">
+    
+    <!-- شاشة التحميل -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p class="text-white text-lg font-medium mt-6">جاري التحميل...</p>
+    </div>
+
+    <!-- الإشعارات -->
+    <div id="notification" class="notification hidden">
+        <span id="notificationText"></span>
+    </div>
+
+    <div class="main-content">
+        <!-- ترويسة القسم -->
+        <header class="bg-gradient-to-br from-primary to-secondary text-white py-6 px-4 sm:px-6 lg:px-8 rounded-b-2xl shadow-lg mb-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold font-heading mb-1">إدارة الزمنيات والأوفر تايم</h1>
+                        <p class="text-emerald-100 text-sm">تسجيل ومتابعة الزمنيات والأوفر تايم للموظفين</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            
+            <!-- أزرار التبديل بين (الزمنيات) و (الأوفر تايم) -->
+            <div class="module-switcher">
+                <a href="break_time_management.html" class="module-tab">الزمنيات</a>
+                <a href="overtime_management.html" class="module-tab active">الأوفر تايم</a>
+            </div>
+
+            <!-- نموذج إدخال أوفر تايم جديد -->
+            <div class="glass-box p-6 mb-8">
+                <h2 class="text-xl font-bold text-text-primary mb-6 font-heading flex items-center">
+                    <svg class="w-6 h-6 ml-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    تسجيل أوفر تايم جديد
+                </h2>
+                
+                <form id="overtimeForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="employeeSelect" class="label">اسم الموظف <span class="text-error">*</span></label>
+                        <select id="employeeSelect" class="select" required>
+                            <option value="">اختر الموظف</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="otDate" class="label">تاريخ ووقت الأوفر تايم <span class="text-error">*</span></label>
+                        <input type="datetime-local" id="otDate" class="input" required>
+                    </div>
+
+                    <div>
+                        <label for="otDuration" class="label">مدة الأوفر تايم <span class="text-error">*</span></label>
+                        <select id="otDuration" class="select" required>
+                            <option value="">اختر المدة</option>
+                            <option value="30">نصف ساعة</option>
+                            <option value="60">ساعة</option>
+                            <option value="90">ساعة ونصف</option>
+                            <option value="120">ساعتين</option>
+                            <option value="150">ساعتين ونصف</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="otNotes" class="label">ملاحظات (اختياري)</label>
+                        <input type="text" id="otNotes" class="input" placeholder="أدخل أي ملاحظات...">
+                    </div>
+
+                    <div class="md:col-span-2 flex justify-end gap-3">
+                        <button type="reset" class="btn btn-outline">إعادة تعيين</button>
+                        <button type="submit" class="btn btn-primary">حفظ الأوفر تايم</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- شريط البحث -->
+            <div class="glass-box p-4 mb-6 flex items-center gap-4 flex-wrap">
+                <input type="text" id="searchInput" class="input flex-1 bg-white/70" placeholder="بحث باسم الموظف...">
+                <button id="resetSearchBtn" class="btn btn-outline">إعادة تعيين</button>
+            </div>
+
+            <!-- الجدول الزجاجي ذو الزوايا المنحنية -->
+            <div class="glass-box p-6">
+                
+                <div class="table-switcher">
+                    <div id="tabAvailable" class="table-tab active" onclick="switchTableView('available')">الوقت المتاح</div>
+                    <div id="tabConsumed" class="table-tab" onclick="switchTableView('consumed')">الوقت المستهلك</div>
+                </div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="tableTitle" class="text-lg font-bold text-text-primary">سجل الوقت المتاح</h3>
+                    <span id="recordCount" class="text-sm font-semibold text-gray-700 bg-white/50 px-3 py-1 rounded-full">0 سجل</span>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead id="tableHeader"></thead>
+                        <tbody id="overtimeTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="paginationControls" class="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/60 text-sm" style="display: none;">
+                    <button type="button" id="prevPageBtn" class="btn btn-outline text-xs py-1 px-3">السابق</button>
+                    <span id="pageNumbers" class="font-bold text-gray-700"></span>
+                    <button type="button" id="nextPageBtn" class="btn btn-outline text-xs py-1 px-3">التالي</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- مودال الاستهلاك -->
+    <div id="consumeModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">استهلاك الأوفر تايم</h3>
+            <div class="space-y-3 mb-4 bg-gray-50/80 p-4 rounded-xl text-sm border border-gray-200">
+                <p><strong>اسم الموظف:</strong> <span id="cEmpName"></span></p>
+                <p><strong>تاريخ التسجيل:</strong> <span id="cDate"></span></p>
+                <p><strong>مدة الأوفر تايم:</strong> <span id="cDuration"></span></p>
+            </div>
+            <form id="consumeForm">
+                <input type="hidden" id="cId">
+                <div class="mb-4">
+                    <label class="label">تاريخ ووقت الاستهلاك <span class="text-error">*</span></label>
+                    <input type="datetime-local" id="consumeDateTime" class="input bg-white" required>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('consumeModal')" class="btn btn-outline">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ الاستهلاك</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال التعديل -->
+    <div id="editModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">تعديل الأوفر تايم</h3>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="mb-4">
+                    <label class="label">اسم الموظف</label>
+                    <select id="editEmployeeSelect" class="select bg-white" required></select>
+                </div>
+                <div class="mb-4">
+                    <label class="label">التاريخ والوقت</label>
+                    <input type="datetime-local" id="editDate" class="input bg-white" required>
+                </div>
+                <div class="mb-4">
+                    <label class="label">المدة</label>
+                    <select id="editDuration" class="select bg-white" required>
+                        <option value="30">نصف ساعة</option>
+                        <option value="60">ساعة</option>
+                        <option value="90">ساعة ونصف</option>
+                        <option value="120">ساعتين</option>
+                        <option value="150">ساعتين ونصف</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="label">ملاحظات</label>
+                    <input type="text" id="editNotes" class="input bg-white">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('editModal')" class="btn btn-outline">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">تحديث</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال الحذف -->
+    <div id="deleteModal" class="modal-overlay hidden">
+        <div class="modal-content text-center">
+            <h3 class="text-xl font-bold text-error mb-2">تأكيد الحذف</h3>
+            <p class="text-gray-600 mb-6">هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            <input type="hidden" id="deleteId">
+            <div class="flex justify-center gap-3">
+                <button onclick="closeModal('deleteModal')" class="btn btn-outline">إلغاء</button>
+                <button id="confirmDeleteBtn" class="btn btn-error">حذف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تأكيد استهلاك الأوفر تايم الداخلي -->
+    <div id="customConfirmModal" class="modal-overlay hidden">
+        <div class="modal-content text-center">
+        <h3 id="confirmModalTitle" class="text-xl font-bold mb-2 text-text-primary">تأكيد العملية</h3>
+        <p id="confirmModalMessage" class="text-gray-600 mb-6">هل أنت متأكد من إتمام هذه العملية؟</p>
+             <div class="flex justify-center gap-3">
+            <button onclick="closeModal('customConfirmModal')" class="btn btn-outline">إلغاء</button>
+            <button id="confirmActionBtn" class="btn btn-primary">موافق</button>
+             </div>
+        </div>
+    </div>
+
+    <!-- سكريبت الإدارة وربط القاعدة -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA08egvPwqPAJ7Vzv8F8O3aW2hIWOukTyI",
+            authDomain: "gg52-f1a35.firebaseapp.com",
+            databaseURL: "https://gg52-f1a35-default-rtdb.firebaseio.com",
+            projectId: "gg52-f1a35",
+            storageBucket: "gg52-f1a35.firebasestorage.app",
+            messagingSenderId: "586005981678",
+            appId: "1:586005981678:web:deaff68f8c6580bdd686ff"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        let employees = [];
+        let overtimes = [];
+        let currentView = 'available';
+        let currentPage = 1;
+        const pageSize = 5;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                loadEmployees();
+                loadOvertimes();
+                setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 500);
+            }
+        });
+
+        function showNotification(msg, type = 'success') {
+            const n = document.getElementById('notification');
+            n.className = `notification notification-${type}`;
+            document.getElementById('notificationText').textContent = msg;
+            n.classList.remove('hidden');
+            setTimeout(() => n.classList.add('hidden'), 3000);
+        }
+
+        window.closeModal = function(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        window.switchTableView = function(view) {
+            currentView = view;
+            currentPage = 1;
+            document.getElementById('tabAvailable').className = view === 'available' ? 'table-tab active' : 'table-tab';
+            document.getElementById('tabConsumed').className = view === 'consumed' ? 'table-tab active' : 'table-tab';
+            document.getElementById('tableTitle').textContent = view === 'available' ? 'سجل الوقت المتاح' : 'سجل الوقت المستهلك';
+            renderTable();
+        }
+
+        function loadEmployees() {
+            onValue(ref(database, 'employees'), (snapshot) => {
+                employees = [];
+                const sel1 = document.getElementById('employeeSelect');
+                const sel2 = document.getElementById('editEmployeeSelect');
+                sel1.innerHTML = '<option value="">اختر الموظف</option>';
+                sel2.innerHTML = '<option value="">اختر الموظف</option>';
+
+                snapshot.forEach(child => {
+                    const emp = { id: child.key, ...child.val() };
+                    employees.push(emp);
+                });
+
+                employees.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+                employees.forEach(emp => {
+                    const opt = `<option value="${emp.id}">${emp.name}</option>`;
+                    sel1.innerHTML += opt;
+                    sel2.innerHTML += opt;
+                });
+            });
+        }
+
+        function loadOvertimes() {
+            onValue(ref(database, 'overtimes'), (snapshot) => {
+                overtimes = [];
+                snapshot.forEach(child => {
+                    overtimes.push({ id: child.key, ...child.val() });
+                });
+                renderTable();
+            });
+        }
+
+        function formatDuration(mins) {
+            mins = parseInt(mins);
+            if (mins === 30) return 'نصف ساعة';
+            if (mins === 60) return 'ساعة واحدة';
+            if (mins === 90) return 'ساعة ونصف';
+            if (mins === 120) return 'ساعتين';
+            if (mins === 150) return 'ساعتين ونصف';
+            return `${mins} دقيقة`;
+        }
+
+        function renderTable() {
+            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+            const filtered = overtimes.filter(ot => {
+                const emp = employees.find(e => e.id === ot.employeeId);
+                const name = emp ? emp.name.toLowerCase() : '';
+                return name.includes(searchVal);
+            });
+
+            const data = filtered.filter(ot => currentView === 'available' ? !ot.isConsumed : ot.isConsumed);
+            
+            document.getElementById('recordCount').textContent = `${data.length} سجل`;
+
+            const tbody = document.getElementById('overtimeTableBody');
+            const thead = document.getElementById('tableHeader');
+            tbody.innerHTML = '';
+
+            if (currentView === 'available') {
+                thead.innerHTML = `<tr><th>الموظف</th><th>التاريخ</th><th>المدة</th><th>ملاحظات</th><th class="text-center">الإجراءات</th></tr>`;
+            } else {
+                thead.innerHTML = `<tr><th>الموظف</th><th>التاريخ الأصلي</th><th>وقت الاستهلاك</th><th>المدة</th><th class="text-center">الإجراءات</th></tr>`;
+            }
+
+            const totalPages = Math.ceil(data.length / pageSize) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * pageSize;
+            const sliceData = data.slice(start, start + pageSize);
+
+            if (sliceData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 font-medium">لا توجد بيانات متاحة</td></tr>`;
+                document.getElementById('paginationControls').style.display = 'none';
+                return;
+            }
+
+            sliceData.forEach(ot => {
+                const emp = employees.find(e => e.id === ot.employeeId);
+                const empName = emp ? emp.name : 'غير معروف';
+
+                if (currentView === 'available') {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="font-medium">${empName}</td>
+                            <td>${ot.date.replace('T', ' ')}</td>
+                            <td>${formatDuration(ot.duration)}</td>
+                            <td>${ot.notes || '-'}</td>
+                            <td class="text-center">
+                              <div style="position: relative; display: inline-block;">
+                                <button onclick="toggleBalls(event, '${ot.id}')" id="btn-${ot.id}" class="options-toggle-btn" title="الإجراءات">⋮</button>
+                                <div id="balls-${ot.id}" class="balls-container">
+                                    <button onclick="openConsumeModal('${ot.id}')" class="action-ball ball-consume" title="استهلاك">استهلاك</button>
+                                    <button onclick="openEditModal('${ot.id}')" class="action-ball ball-edit" title="تعديل">تعديل</button>
+                                    <button onclick="openDeleteModal('${ot.id}')" class="action-ball ball-delete" title="حذف">حذف</button>
+                                </div>
+                              </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="font-medium">${empName}</td>
+                            <td>${formatTime12(ot.date)}</td>
+                           <td>${formatTime12(ot.consumedAt)}</td>
+                            <td>${formatDuration(ot.duration)}</td>
+                            <td class="text-center">
+                                <button onclick="reopenOvertime('${ot.id}')" class="action-btn reopen-btn">إعادة فتح</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+
+            const pag = document.getElementById('paginationControls');
+            if (totalPages > 1) {
+                pag.style.display = 'flex';
+                document.getElementById('pageNumbers').textContent = `صفحة ${currentPage} من ${totalPages}`;
+                document.getElementById('prevPageBtn').disabled = currentPage === 1;
+                document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+            } else {
+                pag.style.display = 'none';
+            }
+        }
+
+        document.getElementById('prevPageBtn').onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); } };
+        document.getElementById('nextPageBtn').onclick = () => { 
+            const filtered = overtimes.filter(ot => {
+                const emp = employees.find(e => e.id === ot.employeeId);
+                const name = emp ? emp.name.toLowerCase() : '';
+                const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+                return name.includes(searchVal);
+            });
+            const data = filtered.filter(ot => currentView === 'available' ? !ot.isConsumed : ot.isConsumed);
+            if (currentPage < Math.ceil(data.length / pageSize)) { currentPage++; renderTable(); } 
+        };
+
+        // تفاعل الكرات الثلاث وتدوير الزر عند الضغط
+        window.toggleBalls = function(e, id) {
+            e.stopPropagation();
+            
+            // إغلاق أي كرات مفتوحة أخرى وتدوير أزرارها للوضع الطبيعي
+            document.querySelectorAll('.balls-container').forEach(c => {
+                if (c.id !== 'balls-' + id) {
+                    c.classList.remove('show');
+                    const otherId = c.id.replace('balls-', '');
+                    const otherBtn = document.getElementById('btn-' + otherId);
+                    if (otherBtn) otherBtn.classList.remove('active');
+                }
+            });
+
+            const ballsContainer = document.getElementById('balls-' + id);
+            const toggleBtn = document.getElementById('btn-' + id);
+            
+            ballsContainer.classList.toggle('show');
+            toggleBtn.classList.toggle('active');
+        }
+
+        // إغلاق الكرات عند النقر في أي مكان فارغ بالشاشة
+        window.addEventListener('click', () => {
+            document.querySelectorAll('.balls-container').forEach(c => c.classList.remove('show'));
+            document.querySelectorAll('.options-toggle-btn').forEach(b => b.classList.remove('active'));
+        });
+
+        // إضافة أوفر تايم جديد
+        document.getElementById('overtimeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                employeeId: document.getElementById('employeeSelect').value,
+                date: document.getElementById('otDate').value,
+                duration: document.getElementById('otDuration').value,
+                notes: document.getElementById('otNotes').value.trim(),
+                isConsumed: false,
+                createdAt: new Date().toISOString()
+            };
+            try {
+                await push(ref(database, 'overtimes'), data);
+                showNotification('تم إضافة الأوفر تايم بنجاح');
+                e.target.reset();
+            } catch (err) {
+                showNotification('حدث خطأ أثناء الإضافة', 'error');
+            }
+        });
+
+        // فتح مودال الاستهلاك
+        window.openConsumeModal = function(id) {
+            const ot = overtimes.find(o => o.id === id);
+            const emp = employees.find(e => e.id === ot.employeeId);
+            document.getElementById('cId').value = id;
+            document.getElementById('cEmpName').textContent = emp ? emp.name : '';
+            document.getElementById('cDate').textContent = ot.date.replace('T', ' ');
+            document.getElementById('cDuration').textContent = formatDuration(ot.duration);
+            document.getElementById('consumeDateTime').value = new Date().toISOString().slice(0,16);
+            document.getElementById('consumeModal').classList.remove('hidden');
+        }
+
+
+          // فتح المودل عند الاستهلاك
+        document.getElementById('consumeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('cId').value;
+            const consumedAt = document.getElementById('consumeDateTime').value;
+            
+            // فتح المودال الداخلي بدلاً من متصفح الويب
+            document.getElementById('confirmModalTitle').textContent = 'تأكيد الاستهلاك';
+            document.getElementById('confirmModalMessage').textContent = 'هل أنت متأكد من حفظ استهلاك هذا الأوفر تايم؟';
+            document.getElementById('customConfirmModal').classList.remove('hidden');
+            
+            // عند الضغط على موافق داخل المودال
+            document.getElementById('confirmActionBtn').onclick = async () => {
+                try {
+                    await update(ref(database, `overtimes/${id}`), { isConsumed: true, consumedAt });
+                    showNotification('تم استهلاك الأوفر تايم بنجاح');
+                    closeModal('consumeModal');
+                    closeModal('customConfirmModal');
+                } catch(err) {
+                    showNotification('حدث خطأ', 'error');
+                    closeModal('customConfirmModal');
+                }
+            };
+        });
+
+        // إعادة الفتح
+       window.reopenOvertime = async function(id) {
+            document.getElementById('confirmModalTitle').textContent = 'تأكيد إعادة الفتح';
+            document.getElementById('confirmModalMessage').textContent = 'هل تريد إعادة فتح هذا الأوفر تايم وإرجاعه للوقت المتاح؟';
+            document.getElementById('customConfirmModal').classList.remove('hidden');
+
+            document.getElementById('confirmActionBtn').onclick = async () => {
+                try {
+                    await update(ref(database, `overtimes/${id}`), { isConsumed: false, consumedAt: null });
+                    showNotification('تمت إعادة فتح السجل بنجاح');
+                    closeModal('customConfirmModal');
+                } catch(err) {
+                    showNotification('حدث خطأ', 'error');
+                    closeModal('customConfirmModal');
+                }
+            };
+        }
+
+        // التعديل والحذف
+        window.openEditModal = function(id) {
+            const ot = overtimes.find(o => o.id === id);
+            document.getElementById('editId').value = id;
+            document.getElementById('editEmployeeSelect').value = ot.employeeId;
+            document.getElementById('editDate').value = ot.date;
+            document.getElementById('editDuration').value = ot.duration;
+            document.getElementById('editNotes').value = ot.notes || '';
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const data = {
+                employeeId: document.getElementById('editEmployeeSelect').value,
+                date: document.getElementById('editDate').value,
+                duration: document.getElementById('editDuration').value,
+                notes: document.getElementById('editNotes').value.trim()
+            };
+            try {
+                await update(ref(database, `overtimes/${id}`), data);
+                showNotification('تم تحديث البيانات بنجاح');
+                closeModal('editModal');
+            } catch(err) {
+                showNotification('حدث خطأ', 'error');
+            }
+        });
+
+        window.openDeleteModal = function(id) {
+            document.getElementById('deleteId').value = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            const id = document.getElementById('deleteId').value;
+            try {
+                await remove(ref(database, `overtimes/${id}`));
+                showNotification('تم الحذف بنجاح');
+                closeModal('deleteModal');
+            } catch(err) {
+                showNotification('حدث خطأ', 'error');
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('input', renderTable);
+        document.getElementById('resetSearchBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            renderTable();
+        });
+
+        function formatTime12(dateTimeStr) {
+            if (!dateTimeStr) return '';
+            // إذا كان النص يحتوي على تاريخ ووقت (مثل 2026-06-06T14:30)
+            const parts = dateTimeStr.split('T');
+            const datePart = parts[0] || '';
+            const timePart = parts[1] || '';
+            
+            if (!timePart) return dateTimeStr;
+
+            const timeSegments = timePart.split(':');
+            let hours = parseInt(timeSegments[0], 10);
+            const minutes = timeSegments[1] || '00';
+            
+            const modifier = hours >= 12 ? 'م' : 'ص';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // الساعة 0 تصبح 12
+            
+            return `${datePart} ${hours}:${minutes} ${modifier}`;
+        }
+
+    </script>
+    <script src="loadBottomNav.js"></script>
+</body>
+</html>
