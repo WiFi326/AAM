@@ -864,48 +864,49 @@ eyeBtn.addEventListener('click', () => {
         });
 
        // Load employees from Firebase
+// Load employees from Firebase
 function loadEmployees() {
-
     const employeesRef = ref(database, 'employees');
 
     onValue(employeesRef, (snapshot) => {
-
         employees = [];
 
+        // 1. إعادة تفريغ جميع القوائم (بما فيها قائمة البحث)
         employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
         document.getElementById('editEmployeeSelect').innerHTML = '<option value="">اختر الموظف</option>';
+        
+        const searchSelect = document.getElementById('searchEmployee');
+        if (searchSelect) {
+            searchSelect.innerHTML = '<option value="">جميع الموظفين</option>';
+        }
 
-        // نخزنهم أولاً
+        // 2. جلب الموظفين من قاعدة البيانات
         snapshot.forEach((childSnapshot) => {
-
             const employee = {
                 id: childSnapshot.key,
                 ...childSnapshot.val()
             };
-
             employees.push(employee);
-
         });
 
-        // 🔥 ترتيب أبجدي عربي
+        // 3. ترتيب الأسماء أبجدياً
         employees.sort((a, b) =>
             a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' })
         );
 
-        // بعدها نعرضهم
+        // 4. تعبئة الموظفين في جميع القوائم المنسدلة
         employees.forEach((employee) => {
-
             const option = `<option value="${employee.id}">${employee.name}</option>`;
 
             employeeSelect.innerHTML += option;
             document.getElementById('editEmployeeSelect').innerHTML += option;
-
+            
+            if (searchSelect) {
+                searchSelect.innerHTML += option;
+            }
         });
-
     });
-
 }
-
 
         // Load breaks
         function loadBreaks() {

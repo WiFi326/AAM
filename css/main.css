@@ -2546,4 +2546,3 @@ body.theme-teal    { background: linear-gradient(135deg, #3e384b 0%, #9f8bb2 100
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
-
